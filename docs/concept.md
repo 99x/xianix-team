@@ -6,7 +6,7 @@
 
 ## 1. Vision
 
-Software teams today face a tension: move fast or maintain quality. Xianix Team dissolves that trade-off by embedding a coordinated set of AI agents into every phase of the software development lifecycle. The goal is **not** full automation — it is **amplification**. Human engineers operate as Full-stack Development Engineers (FDEs) at 10x speed, while AI agents handle the repetitive, detail-heavy work that ensures quality, consistency, and standards are never compromised.
+Software teams today face a tension: move fast or maintain quality. Xianix Team dissolves that trade-off by embedding a coordinated set of AI agents into every phase of the software development lifecycle. The goal is **not** full automation — it is **amplification**. Human engineers operate as Forward-Deployed Engineers (FDEs) at 10x efficacy, while AI agents handle the repetitive, detail-heavy work that ensures quality, consistency, and standards are never compromised.
 
 The agents are not isolated tools. They are **aware of each other**, aware of the **human team members**, and aware of the **product context** they operate in. They form a collaborative mesh that augments the human team rather than replacing it.
 
@@ -64,9 +64,9 @@ The aim is to make every engineer a 10x engineer. AI handles the undifferentiate
 Each phase of the SDLC is supported by a dedicated agent. Together they form a pipeline where work flows from ideation to production with continuous quality enforcement.
 
 ```
- Backlog          Grooming         Sprint          Development       PR Review         Testing
+ Backlog              Grooming         Sprint        Development     PR Review      Testing
  ──────►  RA  ──────►  Human  ──────►  TDA  ──────►  FDE + AI  ──────►  PRA  ──────►  TSA
-           │            Decision         │            Tools            │              │
+           │           Decision          │            Tools            │              │
            │                             │                             │              │
            ▼                             ▼                             ▼              ▼
     Elaborated                         Technical Design              Review            Risk-Based

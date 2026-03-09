@@ -45,15 +45,21 @@ Verdict: APPROVE | REQUEST CHANGES | NEEDS DISCUSSION
 
 ## After the Review
 
-To post the review to GitHub:
+The review is posted to GitHub automatically as part of this command — no further steps required. The agent will output a single confirmation line:
+
 ```
-/post-review 123
+Review posted on PR #<number>: <verdict> — <N> inline comments — <URL>
+```
+
+To run in fix mode (apply and push fixes automatically before posting):
+```
+/pr-review 123 --fix
 ```
 
 ## Prerequisites
 
 - Must be run inside a git repository
-- For GitHub integration: `gh` CLI installed and authenticated (`gh auth login`)
+- GitHub MCP server must be connected (see `docs/mcp-config.md`)
 - For PR number lookup: repo must have a GitHub remote
 
 ---

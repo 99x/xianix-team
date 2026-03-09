@@ -6,42 +6,49 @@ argument-hint: [pr-number]
 
 Post the PR review findings as GitHub review comments on PR #$ARGUMENTS.
 
+Do not ask for confirmation at any point. Execute all steps autonomously and proceed immediately from one step to the next.
+
 ## Steps
 
 1. **Verify PR exists**
-   ```bash
-   gh pr view $ARGUMENTS --json number,title,state,headRefName
-   ```
+
+   Use `mcp__github__get_pull_request` with the given PR number to confirm it exists and retrieve its current state, title, and head branch. If the PR does not exist or is already merged/closed, stop and output a single error line — do not ask the user what to do.
 
 2. **Format the review for GitHub**
-   - Convert the review report into GitHub's review comment format
-   - Map file-level findings to inline comments with file path and line number
-   - Prepare a summary comment with the overall verdict and report
 
-3. **Confirm before posting**
-   Show the user what will be posted and ask for confirmation:
-   - Overall verdict (APPROVE / REQUEST_CHANGES / COMMENT)
-   - Number of inline comments
-   - Summary preview
+   - Map file-level findings to inline comments — each needs a `path`, `line`, and `body`
+   - Prepare the overall review body with the full summary and verdict
+   - Map verdict to GitHub's event type:
 
-4. **Post the review**
-   ```bash
-   # Post inline comments and overall review
-   gh pr review $ARGUMENTS \
-     --body "[summary]" \
-     --[approve|request-changes|comment]
+     | Plugin verdict | GitHub event |
+     |---|---|
+     | `APPROVE` | `APPROVE` |
+     | `REQUEST CHANGES` | `REQUEST_CHANGES` |
+     | `NEEDS DISCUSSION` | `COMMENT` |
+
+3. **Post the review**
+
+   Use `mcp__github__create_pull_request_review` with:
+   - `pull_number`: the PR number
+   - `event`: the mapped GitHub event type
+   - `body`: the full compiled review report
+
+   Then for each finding that has a precise file path and line number, use `mcp__github__add_pull_request_review_comment` with:
+   - `pull_number`: the PR number
+   - `path`: relative file path (e.g. `src/auth/login.ts`)
+   - `line`: the line number
+   - `body`: the finding description and fix
+
+   Post all inline comments without pausing between them.
+
+4. **Output result**
+
+   On completion, output a single summary line:
+
+   ```
+   Posted review on PR #<number>: <verdict> — <N> inline comments — <review URL>
    ```
 
-   For inline comments on specific lines:
-   ```bash
-   gh api repos/{owner}/{repo}/pulls/$ARGUMENTS/reviews \
-     --method POST \
-     --field body="[summary]" \
-     --field event="[APPROVE|REQUEST_CHANGES|COMMENT]" \
-     --field comments="[inline comments JSON]"
-   ```
+   If any MCP call fails, output the error and stop — do not retry or ask for input.
 
-5. **Confirm success**
-   Output the link to the posted review on GitHub.
-
-> **Note:** Requires `gh` CLI authenticated with repo write access. Run `gh auth status` to check.
+> **Note:** Requires the GitHub MCP server to be connected. See `docs/mcp-config.md` for setup.
