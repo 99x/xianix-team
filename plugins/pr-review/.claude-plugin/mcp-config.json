@@ -1,0 +1,8 @@
+{
+    "mcpServers": {
+        "github": {
+            "url": "https://api.github.com",
+            "token": "YOUR_GITHUB_TOKEN"
+        }
+    }
+}

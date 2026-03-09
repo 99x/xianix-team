@@ -14,3 +14,7 @@ When the agents first activated on the tenant
 - Agent is able to distinguish and extreact information from GitHub and AzureDevops
 - If the code branch is not locally present, git subagent checkout the code
 - Invoke the PR review subagent to do the review
+
+## Cloude Code
+
+Each Agent is built on top of a set of Claude Code plugins. These plugins will represent different job-roles in software engineering.
