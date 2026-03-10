@@ -12,7 +12,13 @@
     "license": "MIT",
     "keywords": ["pr-review", "pull-request", "review", "code-quality", "security", "testing"],
     "commands": ["./commands/pr-review.md"],
-    "agents": "./agents/",
+    "agents": [
+      "./agents/code-reviewer.md",
+      "./agents/pr-reviewer.md",
+      "./agents/performance-reviewer.md",
+      "./agents/security-reviewer.md",
+      "./agents/test-reviewer.md"
+    ],
     "skills": "./skills/",
     "hooks": "./hooks/hooks.json",
     "outputStyles": "./styles/",
