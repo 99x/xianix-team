@@ -1,0 +1,19 @@
+{
+  "name": "xianix-tools",
+  "owner": {
+    "name": "99x",
+    "email": "xianix@99x.io"
+  },
+  "metadata": {
+    "description": "Xianix Claude Code plugins for PR review, technical design, and team workflows."
+  },
+  "plugins": [
+    {
+      "name": "pr-review-plugin",
+      "source": "./plugins/pr-review",
+      "description": "Comprehensive PR review with specialized agents for code quality, security, test coverage, and performance analysis.",
+      "version": "1.0.0",
+      "keywords": ["pr-review", "pull-request", "review", "code-quality", "security", "testing"]
+    }
+  ]
+}
