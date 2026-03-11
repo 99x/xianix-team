@@ -45,6 +45,9 @@ public sealed class GitHubWebhookParser : IWebhookPayloadParser
                 ? actionProp.GetString()
                 : null;
 
+            if (!IsReviewableAction(action))
+                return null;
+
             var eventType = MapActionToEvent(action);
             var repoUrl = GetRepoUrl(repository);
             var prNumber = pullRequest.GetProperty("number").GetInt32();
@@ -77,12 +80,20 @@ public sealed class GitHubWebhookParser : IWebhookPayloadParser
         }
     }
 
+    private static bool IsReviewableAction(string? action) =>
+        action?.ToLowerInvariant() switch
+        {
+            "opened" => true,
+            "synchronize" or "synchronized" => true,
+            _ => false,
+        };
+
     private static PrWebhookEvent MapActionToEvent(string? action) =>
         action?.ToLowerInvariant() switch
         {
             "opened" => PrWebhookEvent.PullRequestCreated,
             "synchronize" or "synchronized" => PrWebhookEvent.PullRequestSynchronized,
-            _ => PrWebhookEvent.PullRequestSynchronized, // Default for updated, reopened, etc.
+            _ => PrWebhookEvent.PullRequestSynchronized,
         };
 
     private static JsonElement GetProperty(JsonElement el, params string[] names)
