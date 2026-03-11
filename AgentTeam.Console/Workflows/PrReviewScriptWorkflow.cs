@@ -23,16 +23,23 @@ public class PrReviewScriptWorkflow
         while (true)
         {
             await Workflow.WaitConditionAsync(() => !_pendingInputs.IsEmpty);
-            if (!_pendingInputs.TryDequeue(out var input))
-                continue;
 
-            Workflow.Logger.LogInformation(
-                "Running PR review script for {Repo}#{PrNumber} (platform: {Platform})",
-                input.RepoUrl, input.PrNumber, input.PlatformName);
+            var batch = new List<PrReviewScriptInput>();
+            while (_pendingInputs.TryDequeue(out var input))
+                batch.Add(input);
 
-            await Workflow.ExecuteActivityAsync(
-                (RunPrReviewScriptActivity a) => a.RunAsync(input),
-                new ActivityOptions { StartToCloseTimeout = TimeSpan.FromMinutes(15) });
+            var tasks = batch.Select(input =>
+            {
+                Workflow.Logger.LogInformation(
+                    "Running PR review script for {Repo}#{PrNumber} (platform: {Platform})",
+                    input.RepoUrl, input.PrNumber, input.PlatformName);
+
+                return Workflow.ExecuteActivityAsync(
+                    (RunPrReviewScriptActivity a) => a.RunAsync(input),
+                    new ActivityOptions { StartToCloseTimeout = TimeSpan.FromMinutes(15) });
+            }).ToList();
+
+            await Task.WhenAll(tasks);
 
             if (Workflow.ContinueAsNewSuggested)
             {
