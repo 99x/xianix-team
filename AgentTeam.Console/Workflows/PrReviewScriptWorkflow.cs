@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using Temporalio.Exceptions;
 using Temporalio.Workflows;
@@ -6,71 +5,41 @@ using Temporalio.Workflows;
 namespace AgentTeam.Console.Workflows;
 
 /// <summary>
-/// Temporal workflow that runs run-pr-review.sh for each signaled PR.
-/// Receives PR webhook signals in daemon mode and executes the script via activity.
+/// Per-PR workflow that runs run-pr-review.sh for a single PR.
+/// Started by the integrator on each webhook; receives PR context and executes the script via activity.
 /// </summary>
 [Workflow("PR Review Agent:PR Review Script Workflow")]
 public class PrReviewScriptWorkflow
 {
-    private readonly ConcurrentQueue<PrReviewScriptInput> _pendingInputs = new();
 
     /// <summary>
-    /// Daemon mode: waits for PR webhook signals and runs the script for each.
-    /// Started with empty args, then signaled via TriggerPrReviewAsync.
+    /// Runs the PR review script for the given PR. One execution per webhook.
     /// </summary>
     [WorkflowRun]
-    public async Task RunAsync()
+    public async Task RunAsync(PrReviewScriptInput input)
     {
-        while (true)
+        try
         {
-            await Workflow.WaitConditionAsync(() => !_pendingInputs.IsEmpty);
+            Workflow.Logger.LogInformation(
+                "Running PR review script for {Repo}#{PrNumber} (platform: {Platform})",
+                input.RepoUrl, input.PrNumber, input.PlatformName);
 
-            var batch = new List<PrReviewScriptInput>();
-            while (_pendingInputs.TryDequeue(out var input))
-                batch.Add(input);
-
-            var tasks = batch.Select(async input =>
-            {
-                try
-                {
-                    Workflow.Logger.LogInformation(
-                        "Running PR review script for {Repo}#{PrNumber} (platform: {Platform})",
-                        input.RepoUrl, input.PrNumber, input.PlatformName);
-
-                    await Workflow.ExecuteActivityAsync(
-                        (RunPrReviewScriptActivity a) => a.RunAsync(input),
-                        new ActivityOptions { StartToCloseTimeout = TimeSpan.FromMinutes(15) });
-                }
-                catch (ActivityFailureException ex)
-                {
-                    Workflow.Logger.LogWarning(
-                        "PR review failed for {Repo}#{PrNumber}: {Message}",
-                        input.RepoUrl, input.PrNumber, ex.Message);
-                }
-                catch (Exception ex)
-                {
-                    Workflow.Logger.LogError(ex,
-                        "PR review failed for {Repo}#{PrNumber}",
-                        input.RepoUrl, input.PrNumber);
-                }
-            }).ToList();
-
-            await Task.WhenAll(tasks);
-
-            if (Workflow.ContinueAsNewSuggested)
-            {
-                throw Workflow.CreateContinueAsNewException((PrReviewScriptWorkflow wf) => wf.RunAsync());
-            }
+            await Workflow.ExecuteActivityAsync(
+                (RunPrReviewScriptActivity a) => a.RunAsync(input),
+                new ActivityOptions { StartToCloseTimeout = TimeSpan.FromMinutes(15) });
+        }
+        catch (ActivityFailureException ex)
+        {
+            Workflow.Logger.LogWarning(
+                "PR review failed for {Repo}#{PrNumber}: {Message}",
+                input.RepoUrl, input.PrNumber, ex.Message);
+        }
+        catch (Exception ex)
+        {
+            Workflow.Logger.LogError(ex,
+                "PR review failed for {Repo}#{PrNumber}",
+                input.RepoUrl, input.PrNumber);
         }
     }
 
-    [WorkflowSignal("TriggerPrReviewAsync")]
-    public Task TriggerPrReviewAsync(PrReviewScriptInput input)
-    {
-        _pendingInputs.Enqueue(input);
-        Workflow.Logger.LogInformation(
-            "Triggered PR review for {Repo}#{PrNumber} with platform {Platform}",
-            input.RepoUrl, input.PrNumber, input.PlatformName);
-        return Workflow.DelayAsync(TimeSpan.FromSeconds(1));
-    }
 }

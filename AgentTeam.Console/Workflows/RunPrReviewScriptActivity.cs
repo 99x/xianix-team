@@ -56,7 +56,7 @@ public class RunPrReviewScriptActivity
         {
             if (e.Data is not null)
             {
-                logger.LogWarning("[run-pr-review stderr] {Line}", e.Data);
+                logger.LogInformation("[run-pr-review stderr] {Line}", e.Data);
                 System.Console.Error.WriteLine(e.Data);
             }
         };

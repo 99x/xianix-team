@@ -3,6 +3,7 @@ using AgentTeam.Console.Webhooks;
 using AgentTeam.Console.Webhooks.Parsers;
 using AgentTeam.Console.Workflows;
 using Xians.Lib.Agents.Core;
+using Xians.Lib.Agents.Workflows.Models;
 
 namespace AgentTeam.Console.Agents;
 
@@ -31,7 +32,7 @@ public sealed class PrReviewAgent
             IsTemplate = false
         });
 
-        agent.Workflows.DefineCustom<PrReviewScriptWorkflow>()
+        agent.Workflows.DefineCustom<PrReviewScriptWorkflow>( new WorkflowOptions { Activable = false } )
             .AddActivity<RunPrReviewScriptActivity>();
 
         var webhookResolver = new WebhookParserResolver(
@@ -71,10 +72,7 @@ public sealed class PrReviewAgent
                 prContext.RepoUrl,
                 prContext.PrNumber);
 
-            await XiansContext.Workflows.SignalWithStartAsync<PrReviewScriptWorkflow>(
-                signalArgs: new[] { input },
-                workflowArgs: Array.Empty<object>(),
-                signalName: "TriggerPrReviewAsync");
+            await XiansContext.Workflows.StartAsync<PrReviewScriptWorkflow>(args: new[] { input }, Guid.NewGuid().ToString());
         });
 
         return new PrReviewAgent(agent);
