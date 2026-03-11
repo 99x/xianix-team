@@ -1,6 +1,6 @@
 ---
 name: pr-review
-description: Run a full PR review. Analyzes code quality, security, tests, and performance. Usage: /pr-review [PR number, branch name, or leave blank for current branch]
+description: Run a full PR review. Analyzes code quality, security, tests, and performance. Works with GitHub, Azure DevOps, Bitbucket, and any git repository. Usage: /pr-review [PR number, branch name, or leave blank for current branch]
 argument-hint: [pr-number | branch-name]
 ---
 
@@ -21,9 +21,22 @@ This command invokes the **pr-reviewer** agent which orchestrates four specializ
 
 ```
 /pr-review              # Review current branch vs main
-/pr-review 123          # Review GitHub PR #123
+/pr-review 123          # Review PR #123 (GitHub) or PR ID 123 (Azure DevOps)
 /pr-review feature/foo  # Review branch feature/foo vs main
+/pr-review 123 --fix    # Review and auto-apply fixes
 ```
+
+## Platform Support
+
+The plugin auto-detects the hosting platform from your git remote URL:
+
+| Remote URL contains | Platform | How review is posted |
+|---|---|---|
+| `github.com` | GitHub | GitHub MCP server or `gh` CLI |
+| `dev.azure.com` / `visualstudio.com` | Azure DevOps | `az repos pr` CLI |
+| Anything else | Generic | Written to `pr-review-report.md` |
+
+All diff and file content gathering uses standard git commands — no platform-specific API is needed for the analysis phase.
 
 ## Output
 
@@ -45,22 +58,30 @@ Verdict: APPROVE | REQUEST CHANGES | NEEDS DISCUSSION
 
 ## After the Review
 
-The review is posted to GitHub automatically as part of this command — no further steps required. The agent will output a single confirmation line:
+The review is posted to your platform automatically as part of this command — no further steps required. The agent will output a single confirmation line:
 
+**GitHub:**
 ```
 Review posted on PR #<number>: <verdict> — <N> inline comments — <URL>
 ```
 
-To run in fix mode (apply and push fixes automatically before posting):
+**Azure DevOps:**
 ```
-/pr-review 123 --fix
+Review posted on PR #<number>: <verdict> — <N> inline comments — <URL>
+```
+
+**Generic / unknown platform:**
+```
+Review complete: <verdict> — report written to pr-review-report.md
 ```
 
 ## Prerequisites
 
 - Must be run inside a git repository
-- GitHub MCP server must be connected (see `docs/mcp-config.md`)
-- For PR number lookup: repo must have a GitHub remote
+- The current branch must have at least one commit ahead of the base branch
+- **GitHub**: GitHub MCP server connected (see `docs/platform-setup.md`) or `gh` CLI installed
+- **Azure DevOps**: `az` CLI installed with `azure-devops` extension and authenticated (see `docs/platform-setup.md`)
+- **Fix mode**: `GIT_TOKEN` (GitHub) or `AZURE_DEVOPS_PAT` (Azure DevOps) must be set for `git push`
 
 ---
 

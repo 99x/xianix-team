@@ -1,0 +1,15 @@
+/Users/hasithyaggahavita/Documents/Work/Xians/99x/xianix-team/XianixTeam.Console/bin/Debug/net9.0/XianixTeam.Console
+/Users/hasithyaggahavita/Documents/Work/Xians/99x/xianix-team/XianixTeam.Console/bin/Debug/net9.0/XianixTeam.Console.deps.json
+/Users/hasithyaggahavita/Documents/Work/Xians/99x/xianix-team/XianixTeam.Console/bin/Debug/net9.0/XianixTeam.Console.runtimeconfig.json
+/Users/hasithyaggahavita/Documents/Work/Xians/99x/xianix-team/XianixTeam.Console/bin/Debug/net9.0/XianixTeam.Console.dll
+/Users/hasithyaggahavita/Documents/Work/Xians/99x/xianix-team/XianixTeam.Console/bin/Debug/net9.0/XianixTeam.Console.pdb
+/Users/hasithyaggahavita/Documents/Work/Xians/99x/xianix-team/XianixTeam.Console/obj/Debug/net9.0/XianixTeam.Console.GeneratedMSBuildEditorConfig.editorconfig
+/Users/hasithyaggahavita/Documents/Work/Xians/99x/xianix-team/XianixTeam.Console/obj/Debug/net9.0/XianixTeam.Console.AssemblyInfoInputs.cache
+/Users/hasithyaggahavita/Documents/Work/Xians/99x/xianix-team/XianixTeam.Console/obj/Debug/net9.0/XianixTeam.Console.AssemblyInfo.cs
+/Users/hasithyaggahavita/Documents/Work/Xians/99x/xianix-team/XianixTeam.Console/obj/Debug/net9.0/XianixTeam.Console.csproj.CoreCompileInputs.cache
+/Users/hasithyaggahavita/Documents/Work/Xians/99x/xianix-team/XianixTeam.Console/obj/Debug/net9.0/XianixTeam.Console.sourcelink.json
+/Users/hasithyaggahavita/Documents/Work/Xians/99x/xianix-team/XianixTeam.Console/obj/Debug/net9.0/XianixTeam.Console.dll
+/Users/hasithyaggahavita/Documents/Work/Xians/99x/xianix-team/XianixTeam.Console/obj/Debug/net9.0/refint/XianixTeam.Console.dll
+/Users/hasithyaggahavita/Documents/Work/Xians/99x/xianix-team/XianixTeam.Console/obj/Debug/net9.0/XianixTeam.Console.pdb
+/Users/hasithyaggahavita/Documents/Work/Xians/99x/xianix-team/XianixTeam.Console/obj/Debug/net9.0/XianixTeam.Console.genruntimeconfig.cache
+/Users/hasithyaggahavita/Documents/Work/Xians/99x/xianix-team/XianixTeam.Console/obj/Debug/net9.0/ref/XianixTeam.Console.dll

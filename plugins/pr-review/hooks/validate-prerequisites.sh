@@ -3,13 +3,14 @@
 # Validates that the environment is ready for PR review operations.
 # Run as a PreToolUse hook before Bash tool executions.
 #
-# Reading  — handled via GitHub MCP server (always fresh, no local git needed)
+# Reading  — handled via git commands (platform-agnostic, no MCP required)
 # Writing  — requires local git for commit/push; validated here
 #
 # Credentials
-#   GITHUB_TOKEN — used by the GitHub MCP server for API access
-#   GIT_TOKEN    — used by git push/pull for HTTPS authentication (per-session,
-#                  injected via GIT_CONFIG env vars, never written to disk)
+#   GIT_TOKEN          — used by git push for HTTPS authentication (GitHub / generic)
+#                        injected via GIT_CONFIG env vars, never written to disk
+#   AZURE_DEVOPS_PAT   — used by git push for HTTPS authentication on Azure DevOps remotes
+#                        also used by the az CLI for API calls
 
 set -euo pipefail
 
@@ -45,23 +46,43 @@ if echo "$COMMAND" | grep -qE "^git commit"; then
     fi
 fi
 
-# For push operations — require a remote and a GIT_TOKEN
+# For push operations — require a remote and a token
 if echo "$COMMAND" | grep -qE "^git push"; then
     if ! git remote | grep -q .; then
         echo '{"decision": "block", "reason": "No git remote configured. Add a remote with: git remote add origin <url>"}'
         exit 0
     fi
 
-    if [ -z "${GIT_TOKEN:-}" ]; then
-        echo '{"decision": "block", "reason": "GIT_TOKEN is not set. Pass it at runtime: GIT_TOKEN=ghp_xxx claude ... (see docs/git-auth.md)"}'
-        exit 0
-    fi
+    # Detect platform from the remote URL
+    REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
 
-    # Inject token via env-based git config — no files written, no global config touched,
-    # scoped to this shell session only. Works for any GitHub HTTPS remote.
-    export GIT_CONFIG_COUNT=1
-    export GIT_CONFIG_KEY_0="url.https://x-access-token:${GIT_TOKEN}@github.com/.insteadOf"
-    export GIT_CONFIG_VALUE_0="https://github.com/"
+    if echo "$REMOTE_URL" | grep -qE "(dev\.azure\.com|visualstudio\.com)"; then
+        # Azure DevOps — use AZURE_DEVOPS_PAT
+        if [ -z "${AZURE_DEVOPS_PAT:-}" ]; then
+            echo '{"decision": "block", "reason": "AZURE_DEVOPS_PAT is not set. Pass it at runtime: AZURE_DEVOPS_PAT=<pat> claude ... (see docs/platform-setup.md)"}'
+            exit 0
+        fi
+
+        # Inject the PAT into git credentials for Azure DevOps HTTPS remotes
+        # Supports both dev.azure.com and *.visualstudio.com URL formats
+        export GIT_CONFIG_COUNT=2
+        export GIT_CONFIG_KEY_0="url.https://x-access-token:${AZURE_DEVOPS_PAT}@dev.azure.com/.insteadOf"
+        export GIT_CONFIG_VALUE_0="https://dev.azure.com/"
+        export GIT_CONFIG_KEY_1="url.https://x-access-token:${AZURE_DEVOPS_PAT}@visualstudio.com/.insteadOf"
+        export GIT_CONFIG_VALUE_1="https://visualstudio.com/"
+    else
+        # GitHub or generic HTTPS remote — use GIT_TOKEN
+        if [ -z "${GIT_TOKEN:-}" ]; then
+            echo '{"decision": "block", "reason": "GIT_TOKEN is not set. Pass it at runtime: GIT_TOKEN=<token> claude ... (see docs/platform-setup.md)"}'
+            exit 0
+        fi
+
+        # Inject token via env-based git config — no files written, no global config touched,
+        # scoped to this shell session only.
+        export GIT_CONFIG_COUNT=1
+        export GIT_CONFIG_KEY_0="url.https://x-access-token:${GIT_TOKEN}@github.com/.insteadOf"
+        export GIT_CONFIG_VALUE_0="https://github.com/"
+    fi
 fi
 
 # All checks passed — allow the command to proceed

@@ -1,106 +1,11 @@
-# MCP Configuration — Runtime Setup
+# MCP Configuration
 
-The `pr-review` plugin connects to GitHub via an MCP server defined in `.claude-plugin/mcp-config.json`. This file is committed to the repository as a **template** — it does not contain a real token. You must supply your own GitHub token at runtime using one of the methods below.
+> **This document has been superseded.** Platform setup (GitHub MCP, Azure DevOps, and others) is now documented in [`docs/platform-setup.md`](./platform-setup.md).
 
----
+The GitHub MCP server is now **optional** — the plugin uses git commands for all diff analysis and only uses MCP (or the `gh` CLI) for posting review comments back to GitHub.
 
-## Option 1: Personal config file (recommended)
-
-Create a local MCP config file that lives outside the repository and is never committed:
-
-```bash
-mkdir -p ~/.claude
-```
-
-Create `~/.claude/my-mcp-config.json` with your real token:
-
-```json
-{
-  "mcpServers": {
-    "github": {
-      "url": "https://api.github.com",
-      "token": "ghp_your_actual_token_here"
-    }
-  }
-}
-```
-
-Then launch Claude Code pointing to that file:
-
-```bash
-claude --mcp-config ~/.claude/my-mcp-config.json
-```
-
-> The `--mcp-config` flag overrides the plugin's built-in `mcp-config.json` for the session. Your personal file is never touched by the repository.
-
----
-
-## Option 2: Environment variable substitution
-
-If you prefer to keep a single config file, update `~/.claude/my-mcp-config.json` to reference an environment variable instead of a hardcoded token:
-
-```json
-{
-  "mcpServers": {
-    "github": {
-      "url": "https://api.github.com",
-      "token": "${GITHUB_TOKEN}"
-    }
-  }
-}
-```
-
-Export the variable in your shell before launching:
-
-```bash
-export GITHUB_TOKEN=ghp_your_actual_token_here
-claude --mcp-config ~/.claude/my-mcp-config.json
-```
-
-Add the export to your `~/.zshrc` or `~/.bashrc` to make it permanent:
-
-```bash
-echo 'export GITHUB_TOKEN=ghp_your_actual_token_here' >> ~/.zshrc
-source ~/.zshrc
-```
-
----
-
-## Generating a GitHub Token
-
-1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
-2. Click **Generate new token (classic)**
-3. Select the following scopes:
-   - `repo` — full repository access (required to read PR diffs and comments)
-   - `read:org` — read org membership (optional, for org-owned repos)
-4. Copy the generated token and use it in your config file
-
----
-
-## Verification
-
-After launching with `--mcp-config`, confirm the GitHub MCP server is connected:
-
-```
-/mcp
-```
-
-You should see `github` listed as a connected server with status `connected`. If it shows an error, check that your token is valid and has the required scopes.
-
----
-
-## Summary
-
-| Method | Token location | Committed to repo? |
-|---|---|---|
-| `--mcp-config` with hardcoded token | `~/.claude/my-mcp-config.json` | No |
-| `--mcp-config` with `${GITHUB_TOKEN}` | Shell environment / `.zshrc` | No |
-
----
-
-## Related
-
-- `GITHUB_TOKEN` (this file) — authenticates the GitHub MCP server for API calls (reading PRs, posting reviews)
-- `GIT_TOKEN` ([docs/git-auth.md](./git-auth.md)) — authenticates local `git push` when the agent applies and pushes code fixes
-
-Both tokens are typically the same PAT, but can differ. See `docs/git-auth.md` for full details on passing per-repo git credentials at runtime.
+See [`docs/platform-setup.md`](./platform-setup.md) for:
+- GitHub MCP server setup
+- `gh` CLI setup (GitHub fallback)
+- Azure DevOps CLI setup
+- Token scopes and environment variables
