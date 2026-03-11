@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
+using Temporalio.Exceptions;
 using Temporalio.Workflows;
 
 namespace AgentTeam.Console.Workflows;
@@ -28,15 +29,30 @@ public class PrReviewScriptWorkflow
             while (_pendingInputs.TryDequeue(out var input))
                 batch.Add(input);
 
-            var tasks = batch.Select(input =>
+            var tasks = batch.Select(async input =>
             {
-                Workflow.Logger.LogInformation(
-                    "Running PR review script for {Repo}#{PrNumber} (platform: {Platform})",
-                    input.RepoUrl, input.PrNumber, input.PlatformName);
+                try
+                {
+                    Workflow.Logger.LogInformation(
+                        "Running PR review script for {Repo}#{PrNumber} (platform: {Platform})",
+                        input.RepoUrl, input.PrNumber, input.PlatformName);
 
-                return Workflow.ExecuteActivityAsync(
-                    (RunPrReviewScriptActivity a) => a.RunAsync(input),
-                    new ActivityOptions { StartToCloseTimeout = TimeSpan.FromMinutes(15) });
+                    await Workflow.ExecuteActivityAsync(
+                        (RunPrReviewScriptActivity a) => a.RunAsync(input),
+                        new ActivityOptions { StartToCloseTimeout = TimeSpan.FromMinutes(15) });
+                }
+                catch (ActivityFailureException ex)
+                {
+                    Workflow.Logger.LogWarning(
+                        "PR review failed for {Repo}#{PrNumber}: {Message}",
+                        input.RepoUrl, input.PrNumber, ex.Message);
+                }
+                catch (Exception ex)
+                {
+                    Workflow.Logger.LogError(ex,
+                        "PR review failed for {Repo}#{PrNumber}",
+                        input.RepoUrl, input.PrNumber);
+                }
             }).ToList();
 
             await Task.WhenAll(tasks);
