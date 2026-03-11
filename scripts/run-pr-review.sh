@@ -29,6 +29,10 @@
 #   AZURE_TOKEN       PAT with Code (Read) + Pull Request Threads (Read & Write) scopes
 #   GIT_TOKEN         PAT used for git clone/push over HTTPS (often same as AZURE_TOKEN)
 #
+# Git identity (required for commit in --fix mode; set in .env):
+#   GIT_USER_NAME     Git author name for commits
+#   GIT_USER_EMAIL    Git author email for commits
+#
 # Optional:
 #   XIANIX_REPO       Xianix plugin marketplace repo (default: https://github.com/99x/xianix-team.git)
 #   XIANIX_CACHE_DIR  Local path for the cloned xianix-team repo (default: /tmp/pr-review-cache/xianix-team)
@@ -86,6 +90,9 @@ case "$PLATFORM" in
         ;;
 esac
 
+: "${GIT_USER_NAME:?GIT_USER_NAME is required (set in .env)}"
+: "${GIT_USER_EMAIL:?GIT_USER_EMAIL is required (set in .env)}"
+
 XIANIX_REPO="${XIANIX_REPO:-https://github.com/99x/xianix-team.git}"
 WORKDIR="${WORKDIR:-/tmp/pr-review-${PR_NUMBER}-$(date +%s)}"
 
@@ -131,9 +138,9 @@ else
 fi
 
 log "Creating isolated worktree at ${WORKDIR}"
-# Use a detached HEAD so the worktree isn't tied to a local branch name —
-# this avoids "branch already checked out" errors when multiple worktrees
-# review the same branch concurrently.
+# Use a unique branch name per run to avoid "refusing to fetch into branch checked out" errors
+# when a previous worktree (e.g. from interrupted run) still has pr-N checked out.
+PR_BRANCH="pr-${PR_NUMBER}-$$"
 git -C "${REPO_CACHE_DIR}" worktree add --detach "$WORKDIR"
 
 cd "$WORKDIR"
@@ -142,14 +149,14 @@ cd "$WORKDIR"
 # For GitHub PRs, the ref is refs/pull/<N>/head. For Azure DevOps it is refs/pull/<N>/merge.
 case "$PLATFORM" in
     github)
-        git fetch origin "refs/pull/${PR_NUMBER}/head:pr-${PR_NUMBER}" --depth=50
+        git fetch origin "refs/pull/${PR_NUMBER}/head:${PR_BRANCH}" --depth=50
         ;;
     azure-devops)
-        git fetch origin "refs/pull/${PR_NUMBER}/merge:pr-${PR_NUMBER}" --depth=50
+        git fetch origin "refs/pull/${PR_NUMBER}/merge:${PR_BRANCH}" --depth=50
         ;;
 esac
 
-git checkout "pr-${PR_NUMBER}"
+git checkout "${PR_BRANCH}"
 
 log "Worktree ready on PR branch"
 
@@ -157,8 +164,8 @@ log "Worktree ready on PR branch"
 # Step 2: Configure git identity (required for commit in --fix mode)
 # ---------------------------------------------------------------------------
 
-git config user.name  "xianix-pr-review-bot"
-git config user.email "xianix-bot@99x.io"
+git config user.name  "${GIT_USER_NAME}"
+git config user.email "${GIT_USER_EMAIL}"
 
 # Inject git token for push via env-based config (never written to disk).
 # Scoped to this shell process only.
@@ -268,5 +275,6 @@ if [ "${KEEP_WORKDIR:-0}" != "1" ]; then
     # and deletes the directory. --force handles any leftover untracked files.
     git -C "${REPO_CACHE_DIR}" worktree remove --force "$WORKDIR" 2>/dev/null || rm -rf "$WORKDIR"
     git -C "${REPO_CACHE_DIR}" worktree prune
+    git -C "${REPO_CACHE_DIR}" branch -D "${PR_BRANCH}" 2>/dev/null || true
     rm -f ~/.claude/mcp-config-pr-review.json
 fi
