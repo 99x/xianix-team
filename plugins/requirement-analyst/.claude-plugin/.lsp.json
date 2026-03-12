@@ -1,0 +1,30 @@
+{
+  "typescript": {
+    "command": "typescript-language-server",
+    "args": ["--stdio"],
+    "extensionToLanguage": {
+      ".ts": "typescript",
+      ".tsx": "typescriptreact",
+      ".js": "javascript",
+      ".jsx": "javascriptreact"
+    }
+  },
+  "csharp": {
+    "command": "OmniSharp",
+    "args": ["-lsp"],
+    "extensionToLanguage": {
+      ".cs": "csharp",
+      ".csproj": "xml",
+      ".sln": "xml"
+    }
+  },
+  "css": {
+    "command": "vscode-css-language-server",
+    "args": ["--stdio"],
+    "extensionToLanguage": {
+      ".css": "css",
+      ".scss": "scss",
+      ".less": "less"
+    }
+  }
+}
