@@ -1,7 +1,7 @@
 {
     "name": "pr-review-plugin",
-    "version": "1.0.0",
-    "description": "Comprehensive PR review plugin with specialized agents for code quality, security, test coverage, and performance analysis.",
+    "version": "1.1.0",
+    "description": "Comprehensive PR review plugin with specialized agents for code quality, security, test coverage, and performance analysis. Works with GitHub, Azure DevOps, Bitbucket, and any git repository.",
     "author": {
       "name": "99x",
       "email": "xianix@99x.io",
@@ -10,10 +10,11 @@
     "homepage": "https://github.com/99x/xianix-team",
     "repository": "https://github.com/99x/xianix-team",
     "license": "MIT",
-    "keywords": ["pr-review", "pull-request", "review", "code-quality", "security", "testing"],
+    "keywords": ["pr-review", "pull-request", "review", "code-quality", "security", "testing", "azure-devops", "github"],
     "commands": ["./commands/pr-review.md"],
     "skills": "./skills/",
     "hooks": "./hooks/hooks.json",
     "outputStyles": "./styles/",
+    "providers": "./providers/",
     "lspServers": "./.lsp.json"
   }

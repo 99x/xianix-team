@@ -1,54 +1,83 @@
 ---
 name: post-review
-description: Post the current PR review as GitHub comments. Requires a PR number. Usage: /post-review [pr-number]
+description: Post the current PR review findings as comments on a pull request. Requires a PR number. Usage: /post-review [pr-number]
 argument-hint: [pr-number]
 ---
 
-Post the PR review findings as GitHub review comments on PR #$ARGUMENTS.
+Post the PR review findings as review comments on PR #$ARGUMENTS.
 
 Do not ask for confirmation at any point. Execute all steps autonomously and proceed immediately from one step to the next.
 
 ## Steps
 
-1. **Verify PR exists**
+1. **Detect Platform**
 
-   Use `mcp__github__get_pull_request` with the given PR number to confirm it exists and retrieve its current state, title, and head branch. If the PR does not exist or is already merged/closed, stop and output a single error line — do not ask the user what to do.
+   Run:
+   ```bash
+   git remote get-url origin
+   ```
 
-2. **Format the review for GitHub**
+   Determine the platform:
+   - Contains `github.com` → **GitHub**
+   - Contains `dev.azure.com` or `visualstudio.com` → **Azure DevOps**
+   - Anything else → **Generic**
 
-   - Map file-level findings to inline comments — each needs a `path`, `line`, and `body`
-   - Prepare the overall review body with the full summary and verdict
-   - Map verdict to GitHub's event type:
+2. **Verify PR exists**
 
-     | Plugin verdict | GitHub event |
-     |---|---|
-     | `APPROVE` | `APPROVE` |
-     | `REQUEST CHANGES` | `REQUEST_CHANGES` |
-     | `NEEDS DISCUSSION` | `COMMENT` |
+   Use the platform-appropriate method to confirm the PR exists and retrieve its current state:
 
-3. **Post the review**
+   **GitHub (MCP):**
+   Use `mcp__github__get_pull_request` with the given PR number. If the PR does not exist or is already merged/closed, stop and output a single error line.
 
-   Use `mcp__github__create_pull_request_review` with:
-   - `pull_number`: the PR number
-   - `event`: the mapped GitHub event type
-   - `body`: the full compiled review report
+   **GitHub (CLI fallback):**
+   ```bash
+   gh pr view <pr-number> --json state,title,headRefName
+   ```
 
-   Then for each finding that has a precise file path and line number, use `mcp__github__add_pull_request_review_comment` with:
-   - `pull_number`: the PR number
-   - `path`: relative file path (e.g. `src/auth/login.ts`)
-   - `line`: the line number
-   - `body`: the finding description and fix
+   **Azure DevOps:**
+   ```bash
+   az repos pr show --id <pr-number>
+   ```
 
-   Post all inline comments without pausing between them.
+   If the PR does not exist or is already completed/abandoned, stop and output a single error line — do not ask the user what to do.
 
-4. **Output result**
+3. **Format the review**
+
+   Map the verdict to the platform event type:
+
+   | Plugin verdict | GitHub event | Azure DevOps vote |
+   |---|---|---|
+   | `APPROVE` | `APPROVE` | `10` |
+   | `REQUEST CHANGES` | `REQUEST_CHANGES` | `-10` |
+   | `NEEDS DISCUSSION` | `COMMENT` | `0` |
+
+4. **Post the review**
+
+   Follow the instructions in the appropriate provider file:
+
+   - **GitHub** → `providers/github.md`
+   - **Azure DevOps** → `providers/azure-devops.md`
+   - **Generic / unknown** → `providers/generic.md`
+
+5. **Output result**
 
    On completion, output a single summary line:
 
+   **GitHub:**
    ```
    Posted review on PR #<number>: <verdict> — <N> inline comments — <review URL>
    ```
 
-   If any MCP call fails, output the error and stop — do not retry or ask for input.
+   **Azure DevOps:**
+   ```
+   Posted review on PR #<number>: <verdict> — <N> inline comments — https://dev.azure.com/<org>/<project>/_git/<repo>/pullrequest/<number>
+   ```
 
-> **Note:** Requires the GitHub MCP server to be connected. See `docs/mcp-config.md` for setup.
+   **Generic:**
+   ```
+   Review complete: <verdict> — report written to pr-review-report.md
+   ```
+
+   If any step fails, output the error and stop — do not retry or ask for input.
+
+> **Note:** GitHub posting requires the GitHub MCP server to be connected, or the `gh` CLI to be installed. Azure DevOps posting requires the `az` CLI with the `azure-devops` extension. See `docs/platform-setup.md` for setup instructions.

@@ -1,0 +1,59 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# .NET
+bin/
+obj/
+packages/
+*.user
+*.suo
+.vs/
+*.csproj.user
+*.pidb
+*.DotSettings.user
+project.lock.json
+
+# Node (if used)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python (if used)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.eggs/
+
+# Claude / plugin local config
+**/settings.local.json
+**/.claude/mcp-config-*.json
+
+# Secrets & env
+.env
+.env.local
+.env.*.local
+*.pem
+
+# Logs & temp
+*.log
+/tmp/
+**/pr-review-cache/
+
+# Build artifacts
+*.dll
+*.exe
+*.pdb
+*.cache
+[Bb]uild/
+[Oo]ut/

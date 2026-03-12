@@ -6,51 +6,81 @@ The `pr-review` plugin can apply code fixes and push them directly to the PR bra
 
 ## How it works
 
-The plugin uses **`GIT_CONFIG_COUNT` environment variables** (Git 2.31+) to inject a token transparently into every `git push` command for the session. This rewrites any `https://github.com/` URL to use the token inline, scoped only to the current shell process:
+The plugin uses **`GIT_CONFIG_COUNT` environment variables** (Git 2.31+) to inject a token transparently into every `git push` command for the session. This rewrites any HTTPS remote URL to use the token inline, scoped only to the current shell process.
 
-```bash
-GIT_CONFIG_COUNT=1
-GIT_CONFIG_KEY_0="url.https://x-access-token:<token>@github.com/.insteadOf"
-GIT_CONFIG_VALUE_0="https://github.com/"
-```
-
-This approach:
-- Never touches `~/.gitconfig` or any file on disk
-- Is scoped to the shell session — gone when the process exits
-- Works across any GitHub HTTPS remote regardless of which repo is checked out
-- Supports different tokens per invocation for different repo access levels
-
-The `validate-prerequisites.sh` hook sets this up automatically before every `git push`, as long as `GIT_TOKEN` is present in the environment.
+The `validate-prerequisites.sh` hook sets this up automatically before every `git push`, detecting the platform from the remote URL and injecting the correct token.
 
 ---
 
-## Two tokens, two purposes
+## Credentials by Platform
+
+### GitHub
 
 | Variable | Used by | Purpose |
 |---|---|---|
 | `GITHUB_TOKEN` | GitHub MCP server | Read PR metadata, post review comments via GitHub API |
-| `GIT_TOKEN` | Local git push/pull | Authenticate HTTPS pushes to the PR branch |
+| `GIT_TOKEN` | Local `git push` | Authenticate HTTPS pushes to the PR branch |
 
-These are typically the same personal access token, but they can differ — e.g. if your MCP server uses a GitHub App token and git uses a PAT.
+These are typically the same PAT. The hook injects `GIT_TOKEN` as:
+
+```bash
+GIT_CONFIG_COUNT=1
+GIT_CONFIG_KEY_0="url.https://x-access-token:<GIT_TOKEN>@github.com/.insteadOf"
+GIT_CONFIG_VALUE_0="https://github.com/"
+```
+
+**Generating a GitHub PAT:**
+1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
+2. Click **Generate new token (classic)**
+3. Select scopes: `repo` (private repos) or `public_repo` (public repos only)
+4. For org repos, ensure SSO authorisation if required
+
+### Azure DevOps
+
+| Variable | Used by | Purpose |
+|---|---|---|
+| `AZURE_DEVOPS_PAT` | `az` CLI + Local `git push` | Authenticate API calls and HTTPS pushes |
+
+A single PAT covers both API access and git push. The hook injects `AZURE_DEVOPS_PAT` for both `dev.azure.com` and `*.visualstudio.com` remote URLs:
+
+```bash
+GIT_CONFIG_COUNT=2
+GIT_CONFIG_KEY_0="url.https://x-access-token:<PAT>@dev.azure.com/.insteadOf"
+GIT_CONFIG_VALUE_0="https://dev.azure.com/"
+GIT_CONFIG_KEY_1="url.https://x-access-token:<PAT>@visualstudio.com/.insteadOf"
+GIT_CONFIG_VALUE_1="https://visualstudio.com/"
+```
+
+**Generating an Azure DevOps PAT:**
+1. Go to `https://dev.azure.com/<your-org>/_usersSettings/tokens`
+2. Click **New Token**
+3. Select scopes: `Code (Read & Write)`, `Pull Request Threads (Read & Write)`
 
 ---
 
-## Passing credentials at runtime
+## Passing Credentials at Runtime
 
 ### Inline (single session)
 
+**GitHub:**
 ```bash
 GITHUB_TOKEN=ghp_xxx GIT_TOKEN=ghp_xxx claude --mcp-config ~/.claude/my-mcp-config.json
 ```
 
-Both tokens are set for the duration of the Claude Code session only.
+**Azure DevOps:**
+```bash
+AZURE_DEVOPS_PAT=<pat> claude
+```
 
 ### Via shell export (persistent in current shell)
 
 ```bash
+# GitHub
 export GITHUB_TOKEN=ghp_xxx
 export GIT_TOKEN=ghp_xxx
-claude --mcp-config ~/.claude/my-mcp-config.json
+
+# Azure DevOps
+export AZURE_DEVOPS_PAT=<pat>
 ```
 
 ### Via `.env` file (per-project, never committed)
@@ -58,53 +88,48 @@ claude --mcp-config ~/.claude/my-mcp-config.json
 Create a `.env` file in your project root (add it to `.gitignore`):
 
 ```bash
+# GitHub
 GITHUB_TOKEN=ghp_xxx
 GIT_TOKEN=ghp_xxx
+
+# Azure DevOps
+AZURE_DEVOPS_PAT=<pat>
 ```
 
 Then source it before launching:
 
 ```bash
-source .env && claude --mcp-config ~/.claude/my-mcp-config.json
+source .env && claude
 ```
 
 ---
 
-## Using different tokens per repository
+## Using different credentials per repository
 
-Because credentials are passed at invocation time, you can use a different token for each repo:
+Because credentials are passed at invocation time, you can use a different token for each repository — no global config changes:
 
 ```bash
-# Reviewing a public repo
-GIT_TOKEN=ghp_public_repo_token claude --mcp-config ~/.claude/my-mcp-config.json
+# Reviewing a GitHub repo
+GIT_TOKEN=ghp_my_token claude ...
 
-# Reviewing a private org repo
-GIT_TOKEN=ghp_org_repo_token claude --mcp-config ~/.claude/my-mcp-config.json
+# Reviewing an Azure DevOps repo
+AZURE_DEVOPS_PAT=my_ado_pat claude ...
 ```
 
-No global config changes — each session is fully isolated.
-
 ---
 
-## Generating a token with the right scopes
+## What happens if a token is missing
 
-The token used for `GIT_TOKEN` needs write access to push:
+The `validate-prerequisites.sh` hook blocks any `git push` attempt if the required token is not set:
 
-1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
-2. Click **Generate new token (classic)**
-3. Select scopes:
-   - `repo` — required for push access to private repos
-   - `public_repo` — sufficient for push access to public repos only
-4. For org repos, ensure the token is authorised for SSO if your org requires it
-
----
-
-## What happens if GIT_TOKEN is missing
-
-The `validate-prerequisites.sh` hook blocks any `git push` attempt if `GIT_TOKEN` is not set:
-
+**GitHub:**
 ```
 blocked: GIT_TOKEN is not set. Pass it at runtime: GIT_TOKEN=ghp_xxx claude ... (see docs/git-auth.md)
+```
+
+**Azure DevOps:**
+```
+blocked: AZURE_DEVOPS_PAT is not set. Pass it at runtime: AZURE_DEVOPS_PAT=<pat> claude ... (see docs/git-auth.md)
 ```
 
 `git commit` and other local operations are unaffected — only push requires the token.
@@ -113,7 +138,7 @@ blocked: GIT_TOKEN is not set. Pass it at runtime: GIT_TOKEN=ghp_xxx claude ... 
 
 ## Verification
 
-After launching with the token set, verify git can push by running a dry-run:
+After setting the token, verify git can push with a dry-run:
 
 ```bash
 git push --dry-run origin HEAD
@@ -125,9 +150,9 @@ If it completes without a credential prompt, the token is injected correctly.
 
 ## Summary
 
-| What to set | When |
-|---|---|
-| `GIT_TOKEN` | Any session where the agent will push code fixes |
-| `GITHUB_TOKEN` | Always — required for MCP GitHub API access |
-| Both as same value | Simplest setup if one PAT covers both API and git push |
-| Different values | When using GitHub App tokens for API vs PAT for git |
+| Platform | Token for API | Token for git push |
+|---|---|---|
+| GitHub (MCP) | `GITHUB_TOKEN` | `GIT_TOKEN` |
+| GitHub (CLI) | `gh auth login` | `GIT_TOKEN` |
+| Azure DevOps | `AZURE_DEVOPS_PAT` | `AZURE_DEVOPS_PAT` (same) |
+| Generic | — | `GIT_TOKEN` |

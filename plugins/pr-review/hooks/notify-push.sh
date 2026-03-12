@@ -20,4 +20,11 @@ COMMIT=$(git log -1 --oneline 2>/dev/null || echo "")
 
 echo "Push complete — branch '${BRANCH}' pushed to ${REMOTE}"
 echo "Latest commit: ${COMMIT}"
-echo "Next step: use mcp__github__create_pull_request_review to post the review to GitHub."
+
+if echo "$REMOTE" | grep -q "github.com"; then
+    echo "Next step: use mcp__github__create_pull_request_review to post the review (see providers/github.md)."
+elif echo "$REMOTE" | grep -qE "dev.azure.com|visualstudio.com"; then
+    echo "Next step: post the review via Azure DevOps REST API (see providers/azure-devops.md)."
+else
+    echo "Next step: write the review report to pr-review-report.md (see providers/generic.md)."
+fi
