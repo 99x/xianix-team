@@ -10,16 +10,19 @@ namespace AgentTeam.Console.Workflows;
 public class RunPrReviewScriptActivity
 {
     [Activity("RunPrReviewScript")]
-    public async Task<int> RunAsync(PrReviewScriptInput input)
+    public async Task RunAsync(PrReviewScriptInput input)
     {
+        var logger = ActivityExecutionContext.Current.Logger;
+        var cancellationToken = ActivityExecutionContext.Current.CancellationToken;
+
         var repoRoot = ResolveRepoRoot();
         var scriptPath = Path.Combine(repoRoot, "scripts", "run-pr-review.sh");
 
         if (!File.Exists(scriptPath))
         {
-            ActivityExecutionContext.Current.Logger.LogError(
-                "run-pr-review.sh not found at {ScriptPath}. Set XIANIX_REPO_ROOT to repo root if needed.", scriptPath);
-            return 1;
+            throw new FileNotFoundException(
+                $"run-pr-review.sh not found at '{scriptPath}'. Set XIANIX_REPO_ROOT env var to the repo root directory.",
+                scriptPath);
         }
 
         var startInfo = new ProcessStartInfo
@@ -32,46 +35,42 @@ public class RunPrReviewScriptActivity
             RedirectStandardError = true,
         };
 
+        // Inherit current process env so GIT_TOKEN, AZURE_TOKEN, GITHUB_TOKEN, GIT_USER_* etc. are passed
+        foreach (System.Collections.DictionaryEntry entry in Environment.GetEnvironmentVariables())
+        {
+            if (entry.Key is string k && entry.Value is string v && !string.IsNullOrEmpty(k))
+                startInfo.Environment[k] = v;
+        }
+
         startInfo.Environment["PLATFORM"] = input.PlatformName;
         startInfo.Environment["REPO_URL"] = input.RepoUrl;
         startInfo.Environment["PR_NUMBER"] = input.PrNumber.ToString();
+        if (!string.IsNullOrEmpty(input.SourceRef))
+            startInfo.Environment["PR_SOURCE_REF"] = input.SourceRef;
 
-        using var process = Process.Start(startInfo);
-        if (process is null)
-        {
-            ActivityExecutionContext.Current.Logger.LogError("Failed to start run-pr-review.sh");
-            return 1;
-        }
+        using var process = Process.Start(startInfo)
+            ?? throw new InvalidOperationException("Failed to start run-pr-review.sh process.");
 
-        var logger = ActivityExecutionContext.Current.Logger;
         process.OutputDataReceived += (_, e) =>
         {
             if (e.Data is not null)
-            {
                 logger.LogInformation("[run-pr-review] {Line}", e.Data);
-                System.Console.Out.WriteLine(e.Data); // ensure local visibility
-            }
         };
         process.ErrorDataReceived += (_, e) =>
         {
             if (e.Data is not null)
-            {
-                logger.LogInformation("[run-pr-review stderr] {Line}", e.Data);
-                System.Console.Error.WriteLine(e.Data);
-            }
+                logger.LogWarning("[run-pr-review stderr] {Line}", e.Data);
         };
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
-        await process.WaitForExitAsync();
+        await process.WaitForExitAsync(cancellationToken);
 
         if (process.ExitCode != 0)
         {
-            ActivityExecutionContext.Current.Logger.LogWarning(
-                "[run-pr-review] Exited with code {ExitCode}", process.ExitCode);
+            throw new InvalidOperationException(
+                $"run-pr-review.sh exited with code {process.ExitCode} for {input.PlatformName} PR #{input.PrNumber} ({input.RepoUrl}).");
         }
-
-        return process.ExitCode;
     }
 
     private static string ResolveRepoRoot()
@@ -88,8 +87,7 @@ public class RunPrReviewScriptActivity
             var dir = Path.GetFullPath(startDir);
             while (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
             {
-                var scriptPath = Path.Combine(dir, "scripts", "run-pr-review.sh");
-                if (File.Exists(scriptPath))
+                if (File.Exists(Path.Combine(dir, "scripts", "run-pr-review.sh")))
                     return dir;
                 dir = Path.GetDirectoryName(dir);
             }

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using AgentTeam.Console.Webhooks.Models;
+using Microsoft.Extensions.Logging;
 
 namespace AgentTeam.Console.Webhooks.Parsers;
 
@@ -8,6 +9,10 @@ namespace AgentTeam.Console.Webhooks.Parsers;
 /// </summary>
 public sealed class GitHubWebhookParser : IWebhookPayloadParser
 {
+    private static readonly ILogger Logger = LoggerFactory
+        .Create(b => b.AddConsole().SetMinimumLevel(LogLevel.Debug))
+        .CreateLogger<GitHubWebhookParser>();
+
     private const string GitHubEventHeader = "X-GitHub-Event";
     private const string PullRequestEvent = "pull_request";
 
@@ -25,7 +30,7 @@ public sealed class GitHubWebhookParser : IWebhookPayloadParser
             var hasRepo = root.TryGetProperty("repository", out _);
             return hasPr && hasRepo;
         }
-        catch
+        catch (JsonException)
         {
             return false;
         }
@@ -74,8 +79,9 @@ public sealed class GitHubWebhookParser : IWebhookPayloadParser
                 RawPayload = doc.RootElement.Clone(),
             };
         }
-        catch
+        catch (Exception ex) when (ex is not OutOfMemoryException)
         {
+            Logger.LogError(ex, "Failed to parse GitHub webhook payload");
             return null;
         }
     }

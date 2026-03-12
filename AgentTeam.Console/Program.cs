@@ -15,6 +15,14 @@ var serverUrl = Environment.GetEnvironmentVariable("XIANS_SERVER_URL")
 var xiansApiKey = Environment.GetEnvironmentVariable("XIANS_API_KEY")
     ?? throw new InvalidOperationException("XIANS_API_KEY not found in environment variables");
 
+using var cts = new CancellationTokenSource();
+Console.CancelKeyPress += (_, e) =>
+{
+    e.Cancel = true;
+    cts.Cancel();
+};
+AppDomain.CurrentDomain.ProcessExit += (_, _) => cts.Cancel();
+
 // Initialize Xians Platform
 var xiansPlatform = await XiansPlatform.InitializeAsync(new()
 {
@@ -26,8 +34,15 @@ var xiansPlatform = await XiansPlatform.InitializeAsync(new()
 
 var prReviewAgent = PrReviewAgent.Register(xiansPlatform);
 
-Console.WriteLine("All agents registered successfully.");
+Console.WriteLine("PR Review Agent registered. Listening for webhooks...");
 
-await Task.WhenAll(
-    prReviewAgent.RunAllAsync()
-);
+try
+{
+    await Task.WhenAll(
+        prReviewAgent.RunAllAsync()
+    ).WaitAsync(cts.Token);
+}
+catch (OperationCanceledException)
+{
+    Console.WriteLine("Shutting down gracefully...");
+}
