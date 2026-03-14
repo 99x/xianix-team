@@ -98,6 +98,40 @@ docker run --rm \
 
 ---
 
+## Triggering from a Webhook Server
+
+When running without the Console App (direct script invocation), the script can be called from any webhook handler. A minimal Node.js example for GitHub:
+
+```js
+import { exec } from 'child_process'
+
+app.post('/webhook/github', (req, res) => {
+  const { action, pull_request, repository } = req.body
+  if (action !== 'opened' && action !== 'synchronize') return res.sendStatus(200)
+
+  const env = {
+    ...process.env,
+    PLATFORM:      'github',
+    REPO_URL:      repository.clone_url,
+    PR_NUMBER:     String(pull_request.number),
+    GITHUB_TOKEN:  process.env.GITHUB_TOKEN,
+  }
+
+  exec('bash scripts/run-pr-review.sh', { env }, (err, stdout, stderr) => {
+    if (err) console.error('Review failed:', stderr)
+    else console.log(stdout)
+  })
+
+  res.sendStatus(202)
+})
+```
+
+For Azure DevOps, replace the payload parsing with `resource.pullRequestId` and `resource.repository.remoteUrl` from the ADO service hook payload.
+
+> In production, the recommended approach is the Console App + Xians ACP, which handles webhook routing, deduplication, and durable execution automatically. See the [README](../README.md) for the full architecture.
+
+---
+
 ## How It Works Inside the Container
 
 ```
@@ -146,41 +180,7 @@ docker compose down -v
 
 ## CI/CD — Automated Docker Hub Publish
 
-The workflow at `.github/workflows/docker-publish.yml` builds and pushes the image to Docker Hub automatically whenever a version tag is pushed.
-
-### 1. Add Docker Hub secrets to the GitHub repository
-
-Go to **Settings → Secrets and variables → Actions** and add:
-
-| Secret name | Value |
-|---|---|
-| `DOCKERHUB_USERNAME` | Your Docker Hub username |
-| `DOCKERHUB_TOKEN` | A Docker Hub [access token](https://hub.docker.com/settings/security) (not your password) |
-
-### 2. Tag and push a release
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-The workflow publishes three tags to Docker Hub:
-
-| Tag | Meaning |
-|---|---|
-| `you/xianix-pr-review-agent:1.0.0` | Exact, immutable version |
-| `you/xianix-pr-review-agent:1` | Floating major-version tag |
-| `you/xianix-pr-review-agent:latest` | Always the newest release |
-
-### 3. Pull and run the published image
-
-```bash
-docker run --rm \
-  --env-file AgentTeam.Console/.env \
-  -v pr-review-cache:/tmp/pr-review-cache \
-  -v claude-home:/root/.claude \
-  you/xianix-pr-review-agent:latest
-```
+See [docs/dockerhub-publishing.md](dockerhub-publishing.md) for the full guide on setting up automated Docker Hub publishing via GitHub Actions.
 
 ---
 
