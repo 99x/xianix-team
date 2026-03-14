@@ -2,6 +2,7 @@
 name: review-pr
 description: Trigger a comprehensive PR review. Runs code quality, security, test coverage, and performance analysis. Usage: /review-pr [PR number or branch name]
 argument-hint: [pr-number or branch-name]
+disable-model-invocation: true
 ---
 
 Perform a comprehensive review of the pull request $ARGUMENTS.

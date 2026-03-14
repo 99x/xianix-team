@@ -10,6 +10,36 @@ Alternatively, the `gh` CLI can be used as a fallback if MCP is unavailable.
 
 ---
 
+## Posting the Starting Comment
+
+Before running any analysis, post a plain PR comment to inform the author that a review is underway. This fires as the very first action on GitHub, before sub-agents are launched.
+
+Use `mcp__github__add_issue_comment` with:
+- `owner`: repo owner parsed from the remote URL (e.g. `my-org`)
+- `repo`: repo name parsed from the remote URL (e.g. `my-repo`)
+- `issue_number`: the PR number (PRs share the same number space as issues on GitHub)
+- `body`:
+
+```
+🔍 **PR review in progress**
+
+I'm running a comprehensive review covering code quality, security, test coverage, and performance. The full results will be posted as a review comment when complete — this may take a few minutes.
+```
+
+Parse `owner` and `repo` from the remote URL:
+
+```bash
+REMOTE=$(git remote get-url origin)
+# https://github.com/org/repo.git  →  owner=org  repo=repo
+# git@github.com:org/repo.git      →  owner=org  repo=repo
+OWNER=$(echo "$REMOTE" | sed 's|https://github.com/||;s|git@github.com:||' | cut -d'/' -f1)
+REPO=$(echo "$REMOTE"  | sed 's|https://github.com/||;s|git@github.com:||' | cut -d'/' -f2 | sed 's|\.git$||')
+```
+
+If posting the starting comment fails, output a single warning line and continue — do not stop the review.
+
+---
+
 ## Posting the Review
 
 ### Option A — GitHub MCP (preferred)

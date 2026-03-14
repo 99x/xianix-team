@@ -1,7 +1,7 @@
 ---
 name: pr-reviewer
 description: Comprehensive PR review orchestrator. Coordinates multi-dimensional code review covering quality, security, tests, and performance. Can also apply fixes and push changes. Invoke for a full pull request analysis before merge.
-tools: Read, Write, Grep, Glob, Bash, Agent, mcp__github__create_pull_request_review, mcp__github__add_pull_request_review_comment
+tools: Read, Write, Grep, Glob, Bash, Agent, mcp__github__add_issue_comment, mcp__github__create_pull_request_review, mcp__github__add_pull_request_review_comment
 model: inherit
 ---
 
@@ -73,9 +73,35 @@ From the remote URL, determine the platform:
 
 Store the detected platform — it determines how the review is posted in Step 5.
 
-### 2. Gather PR Context (via git — works on any platform)
+### 2. Post a "Review in Progress" Comment
 
-Run these git commands to gather all diff information:
+Before doing any analysis, post an immediate comment to let the PR author know the review has started. This avoids confusion from the silence while sub-agents run.
+
+**GitHub:** Use `mcp__github__add_issue_comment`. Parse `owner` and `repo` from the remote URL (strip `https://github.com/` and `.git`), then call:
+- `owner`: repo owner (e.g. `my-org`)
+- `repo`: repo name (e.g. `my-repo`)
+- `issue_number`: the PR number
+- `body`:
+  ```
+  🔍 **PR review in progress**
+
+  I'm running a comprehensive review covering code quality, security, test coverage, and performance. The full results will be posted as a review comment when complete — this may take a few minutes.
+  ```
+
+**Azure DevOps:** Use `curl` to post an initial comment thread before any analysis:
+```bash
+curl -s -u ":${AZURE_TOKEN}" \
+  -X POST \
+  -H "Content-Type: application/json" \
+  "https://dev.azure.com/${AZURE_ORG}/${AZURE_PROJECT}/_apis/git/repositories/${AZURE_REPO}/pullrequests/${PR_ID}/threads?api-version=7.1" \
+  -d '{"comments":[{"content":"🔍 **PR review in progress**\n\nI'\''m running a comprehensive review covering code quality, security, test coverage, and performance. The full results will be posted as a review comment when complete — this may take a few minutes.","commentType":1}],"status":"active"}'
+```
+
+**Generic / unknown platform:** Skip — there is no API available.
+
+If posting the starting comment fails, output a single warning line and continue — do not stop the review.
+
+### 3. Gather PR Context (via git — works on any platform)
 
 ```bash
 # Determine the base branch (default to main, fall back to master)
@@ -108,7 +134,7 @@ git log --format="%s%n%b" origin/${BASE}..HEAD
 
 Use `git show HEAD:<filepath>` or the `Read` tool to read the full content of any file that requires deeper analysis beyond the patch.
 
-### 3. Understand the Change
+### 4. Understand the Change
 
 Before launching sub-agents:
 - Identify the type of change (feature, bugfix, refactor, config, docs)
@@ -116,7 +142,7 @@ Before launching sub-agents:
 - Identify critical or high-risk files (auth, payments, database migrations, public APIs)
 - Estimate scope (small/medium/large)
 
-### 4. Orchestrate Specialized Reviews
+### 5. Orchestrate Specialized Reviews
 
 Pass the git-fetched file list and patches to each sub-agent so they don't need to re-fetch. Launch all four reviewers in parallel using the Agent tool:
 
@@ -125,7 +151,7 @@ Pass the git-fetched file list and patches to each sub-agent so they don't need 
 - **test-reviewer**: Test coverage and test quality
 - **performance-reviewer**: Bottlenecks, inefficiencies, resource usage
 
-### 5. Compile Final Report
+### 6. Compile Final Report
 
 Aggregate all findings into a structured review report:
 
@@ -238,7 +264,7 @@ Post a comment listing:
 - Which issues were auto-fixed (with file and line references)
 - Which issues still require manual attention
 
-Use the platform-appropriate method from Step 5 below with event `COMMENT`.
+Use the platform-appropriate method from the Posting the Review section below with event `COMMENT`.
 
 ---
 

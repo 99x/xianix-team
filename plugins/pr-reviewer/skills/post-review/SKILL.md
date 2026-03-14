@@ -2,6 +2,7 @@
 name: post-review
 description: Post the current PR review findings as comments on a pull request. Requires a PR number. Usage: /post-review [pr-number]
 argument-hint: [pr-number]
+disable-model-invocation: true
 ---
 
 Post the PR review findings as review comments on PR #$ARGUMENTS.

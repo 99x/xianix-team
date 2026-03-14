@@ -63,6 +63,24 @@ Store the result as `PR_ID`. If empty, the branch has no open PR — output a wa
 
 ---
 
+## Posting the Starting Comment
+
+Before running any analysis, post a plain PR comment thread to inform the author that a review is underway. This fires as the very first action on Azure DevOps, before sub-agents are launched.
+
+Parse the remote URL first (see **Parsing the Remote URL** above), then call:
+
+```bash
+curl -s -u ":${AZURE_TOKEN}" \
+  -X POST \
+  -H "Content-Type: application/json" \
+  "https://dev.azure.com/${AZURE_ORG}/${AZURE_PROJECT}/_apis/git/repositories/${AZURE_REPO}/pullrequests/${PR_ID}/threads?api-version=7.1" \
+  -d '{"comments":[{"content":"🔍 **PR review in progress**\n\nI'\''m running a comprehensive review covering code quality, security, test coverage, and performance. The full results will be posted as a review comment when complete — this may take a few minutes.","commentType":1}],"status":"active"}'
+```
+
+If posting the starting comment fails, output a single warning line and continue — do not stop the review.
+
+---
+
 ## Posting the Review
 
 ### 1. Map verdict to Azure DevOps vote
