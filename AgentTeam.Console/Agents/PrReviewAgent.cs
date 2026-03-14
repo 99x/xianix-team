@@ -38,7 +38,7 @@ public sealed class PrReviewAgent
             Description = "This agent reviews pull requests for code quality, security, and compliance.",
             Version = "1.0.0",
             Author = "99x",
-            IsTemplate = false
+            IsTemplate = true
         });
 
         agent.Workflows.DefineCustom<PrReviewScriptWorkflow>(new WorkflowOptions { Activable = false })
