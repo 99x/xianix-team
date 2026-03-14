@@ -1,0 +1,43 @@
+services:
+  pr-review-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: xianix-pr-review-agent:latest
+    restart: unless-stopped
+
+    environment:
+      # ── Xians platform ────────────────────────────────────────────────────
+      XIANS_SERVER_URL: ${XIANS_SERVER_URL}
+      XIANS_API_KEY: ${XIANS_API_KEY}
+
+      # ── Claude (Anthropic) ────────────────────────────────────────────────
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+
+      # ── Git identity (used for commits in --fix mode) ─────────────────────
+      GIT_USER_NAME: ${GIT_USER_NAME}
+      GIT_USER_EMAIL: ${GIT_USER_EMAIL}
+
+      # ── GitHub ────────────────────────────────────────────────────────────
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+
+      # ── Azure DevOps ──────────────────────────────────────────────────────
+      AZURE_TOKEN: ${AZURE_TOKEN:-}
+      GIT_TOKEN: ${GIT_TOKEN:-}
+
+      # ── Script tuning (optional) ──────────────────────────────────────────
+      # PR_REVIEW_TIMEOUT_MINUTES: 20
+      # GIT_FETCH_DEPTH: 50
+      # XIANIX_REPO: https://github.com/99x/xianix-team.git
+
+    volumes:
+      # Persist the bare-clone cache and the xianix-team plugin repo across
+      # container restarts so subsequent reviews skip the initial git clone.
+      - pr-review-cache:/tmp/pr-review-cache
+      # Claude's local state (session cache, MCP config, etc.)
+      # Container runs as non-root user 'agent' (uid 1001) — not /root
+      - claude-home:/home/agent/.claude
+
+volumes:
+  pr-review-cache:
+  claude-home:

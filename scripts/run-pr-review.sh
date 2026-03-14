@@ -372,11 +372,19 @@ if [ "$PLATFORM" = "github" ]; then
     MCP_CONFIG_ARGS=(--mcp-config "${HOME}/.claude/mcp-config-pr-review.json")
 fi
 
-claude \
+CLAUDE_OUTPUT=$(claude \
     --dangerously-skip-permissions \
     --verbose \
     --plugin-dir "${PLUGIN_DIR}" \
     ${MCP_CONFIG_ARGS[@]+"${MCP_CONFIG_ARGS[@]}"} \
-    -p "${REVIEW_PROMPT}"
+    -p "${REVIEW_PROMPT}" 2>&1) || {
+    CLAUDE_EXIT=$?
+    echo "$CLAUDE_OUTPUT"
+    if echo "$CLAUDE_OUTPUT" | grep -qi "credit balance is too low\|insufficient.*credit\|billing\|payment"; then
+        fail "Claude API credit balance is too low — top up your Anthropic account at https://console.anthropic.com/settings/billing"
+    fi
+    fail "claude exited with code ${CLAUDE_EXIT}"
+}
+echo "$CLAUDE_OUTPUT"
 
 log "Review complete"

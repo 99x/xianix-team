@@ -1,6 +1,46 @@
-# Server Automation — Autonomous PR Review
+# Xianix Team — AI-Augmented Software Development
 
-## How it works
+> Humans and AI agents, working as one team across the full software development lifecycle.
+
+Xianix Team embeds a coordinated mesh of AI agents into every phase of the SDLC — from requirement analysis and sprint planning through to PR review, test strategy, and documentation maintenance. The goal is **amplification, not replacement**: human engineers operate at 10x efficacy while agents handle the repetitive, detail-heavy work that keeps quality and standards from slipping.
+
+The first agent shipped is the **PR Review Agent** — a fully autonomous code reviewer that triggers on pull requests, analyses the diff against architecture rules and coding standards, and posts structured feedback directly on the PR.
+
+---
+
+## Documentation
+
+### Concepts & Architecture
+
+| Document | Description |
+|----------|-------------|
+| [docs/concept.md](docs/concept.md) | Vision, the full SDLC agent pipeline, and the agent mesh model |
+| [docs/agent-architecture.md](docs/agent-architecture.md) | Technical architecture: Agent Control Plane, webhook flow, Claude Code plugin system |
+| [docs/webhook-provider-design.md](docs/webhook-provider-design.md) | Webhook parsing design — provider identification, unified PR context model, GitHub vs Azure DevOps |
+
+### Setup & Usage
+
+| Document | Description |
+|----------|-------------|
+| [docs/manual-plugin.setup.md](docs/manual-plugin.setup.md) | Install and use the PR Review plugin manually via Claude Code |
+| [plugins/pr-review/docs/platform-setup.md](plugins/pr-review/docs/platform-setup.md) | Platform setup for GitHub and Azure DevOps (review posting, tokens) |
+| [plugins/pr-review/docs/git-auth.md](plugins/pr-review/docs/git-auth.md) | Runtime git credentials — how tokens are passed for clone and push |
+| [plugins/pr-review/docs/mcp-config.md](plugins/pr-review/docs/mcp-config.md) | MCP configuration reference (superseded by platform-setup.md) |
+
+### Deployment
+
+| Document | Description |
+|----------|-------------|
+| [docs/docker-deployment.md](docs/docker-deployment.md) | Running the PR Review agent in Docker |
+| [docs/dockerhub-publishing.md](docs/dockerhub-publishing.md) | Publishing the Docker image to Docker Hub via GitHub Actions |
+
+---
+
+## PR Review Agent — Quick Start
+
+The PR Review agent is triggered by a webhook or CI event and runs `scripts/run-pr-review.sh` to bootstrap, clone, and invoke the Claude Code review plugin.
+
+### How it works
 
 ```
 [Webhook / CI trigger]
@@ -29,17 +69,7 @@ scripts/run-pr-review.sh
         └── git worktree remove (cleanup — bare cache kept for next run)
 ```
 
-### Concurrent safety
-
-Each PR review runs in its own `git worktree` — an independent checkout backed by a single shared bare clone. Concurrent reviews of the same repository share the object store without conflict: no two runs share a working directory, so `git checkout`, file edits, and `--fix` commits never interfere with each other.
-
----
-
-## Scripts
-
-### `run-pr-review.sh`
-
-The main entrypoint. Handles full bootstrap → plugin install → review for GitHub and Azure DevOps.
+Each PR review runs in its own `git worktree` — an independent checkout backed by a single shared bare clone. Concurrent reviews share the object store without conflict.
 
 ---
 
@@ -148,16 +178,7 @@ For Azure DevOps, replace the webhook payload parsing with the `resource.pullReq
 
 ## Running in a container
 
-For fully isolated server environments, run the script inside a container with the required tools pre-installed:
-
-```dockerfile
-FROM node:20-slim
-RUN apt-get update && apt-get install -y git curl python3 && rm -rf /var/lib/apt/lists/*
-RUN npm install -g @anthropic-ai/claude-code
-COPY scripts/ /app/scripts/
-WORKDIR /app
-ENTRYPOINT ["bash", "scripts/run-pr-review.sh"]
-```
+See [docs/docker-deployment.md](docs/docker-deployment.md) for the full guide. Quick example:
 
 ```bash
 docker run --rm \
@@ -169,14 +190,14 @@ docker run --rm \
   xianix-pr-review
 ```
 
-Mounting `/var/cache/pr-review` as the cache directory means both the bare clone and the xianix-team plugin repo persist across container restarts — only the first review for a given repo does a full clone.
+Mounting `/var/cache/pr-review` means both the bare clone and the xianix-team plugin repo persist across container restarts — only the first review for a given repo does a full clone.
 
 ---
 
 ## Security notes
 
 - Tokens are passed as environment variables, never written to disk or committed.
-- The clone uses an in-URL token injection scoped to the process — `~/.gitconfig` is never modified.
+- The clone uses in-URL token injection scoped to the process — `~/.gitconfig` is never modified.
 - The MCP config is written to `~/.claude/mcp-config-pr-review.json` and deleted after the run.
 - Use `--dangerously-skip-permissions` only inside isolated containers or VMs — never on a shared machine.
 - Rotate tokens regularly; use fine-grained PATs with the minimum required scopes.

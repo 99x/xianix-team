@@ -1,0 +1,23 @@
+# Secrets — must never be baked into the image
+AgentTeam.Console/.env
+.env
+
+# .NET build artefacts
+AgentTeam.Console/bin/
+AgentTeam.Console/obj/
+tests/AgentTeam.Console.Tests/bin/
+tests/AgentTeam.Console.Tests/obj/
+
+# Test project (not needed in production image)
+tests/
+
+# Documentation
+docs/
+
+# Git metadata
+.git/
+.gitignore
+
+# Editor / OS files
+.DS_Store
+*.log
