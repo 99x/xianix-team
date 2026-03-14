@@ -6,7 +6,8 @@ on:
       - "v*.*.*"   # triggers on version tags: v1.0.0, v2.3.1, etc.
 
 env:
-  IMAGE_NAME: xianix-pr-review-agent
+  DOCKER_ORG: 99xio
+  IMAGE_NAME: xianix
 
 jobs:
   build-and-push:
@@ -48,12 +49,12 @@ jobs:
           #   org/image:1       — major-version floating tag
           #   org/image:latest  — always the newest release
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.major }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+            ${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.major }}
+            ${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}:latest
           # Layer cache — reuses cached layers across tag builds
-          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:buildcache
-          cache-to:   type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+          cache-from: type=registry,ref=${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to:   type=registry,ref=${{ env.DOCKER_ORG }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
           labels: |
             org.opencontainers.image.title=Xianix PR Review Agent
             org.opencontainers.image.version=${{ steps.meta.outputs.version }}
