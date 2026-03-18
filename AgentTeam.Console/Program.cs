@@ -25,9 +25,11 @@ var xiansPlatform = await XiansPlatform.InitializeAsync(new()
 });
 
 var prReviewAgent = PrReviewAgent.Register(xiansPlatform);
+var requirementAnalysisAgent = RequirementAnalysisAgent.Register(xiansPlatform);
 
 Console.WriteLine("All agents registered successfully.");
 
 await Task.WhenAll(
-    prReviewAgent.RunAllAsync()
+    prReviewAgent.RunAllAsync(),
+    requirementAnalysisAgent.RunAllAsync()
 );

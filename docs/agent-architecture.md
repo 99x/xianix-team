@@ -323,6 +323,107 @@ flowchart LR
 
 ---
 
+## Example Workflow: Requirement Analysis (End-to-End)
+
+A complete flow from backlog item creation to elaborated requirement.
+
+### Flow Diagram
+
+```mermaid
+flowchart LR
+    subgraph External
+        Issue[GitHub Issue]
+    end
+
+    subgraph Trigger
+        Cmd["/requirement-analysis #N"]
+    end
+
+    subgraph Agent
+        Orch[Requirement Analyst Orchestrator]
+    end
+
+    subgraph "Sub-Agents (parallel)"
+        CA[Context Analyst]
+        ACW[Acceptance Criteria Writer]
+        DA[Dependency Analyzer]
+        GD[Gap Detector]
+    end
+
+    subgraph Output
+        Body[Issue Body Update]
+        Label[Verdict Label]
+        Comment[Issue Comment]
+    end
+
+    Issue --> Cmd
+    Cmd --> Orch
+    Orch --> CA
+    Orch --> ACW
+    Orch --> DA
+    Orch --> GD
+    CA --> Orch
+    ACW --> Orch
+    DA --> Orch
+    GD --> Orch
+    Orch --> Body
+    Orch --> Label
+    Orch --> Comment
+    Body --> Issue
+    Label --> Issue
+    Comment --> Issue
+```
+
+### Step-by-Step
+
+| Step | Component                    | Action                                                                                  |
+| ---- | ---------------------------- | --------------------------------------------------------------------------------------- |
+| 1    | User / Automation            | Invokes `/requirement-analysis <issue-number>` (optionally with `--comment`)            |
+| 2    | Orchestrator                 | Fetches issue metadata (title, body, labels, assignee, comments) via GitHub MCP          |
+| 3    | Orchestrator                 | Classifies item: type (story/task/bug/spike), domain, complexity                        |
+| 4    | Context Analyst              | Searches codebase for affected modules, related issues, architectural patterns           |
+| 5    | Acceptance Criteria Writer   | Writes testable Given/When/Then criteria covering happy path, errors, edge cases         |
+| 6    | Dependency Analyzer          | Maps upstream/downstream/external dependencies, risks, and constraints                   |
+| 7    | Gap Detector                 | Identifies ambiguities, missing info, contradictions; assigns severity (Critical/Warning/Info) |
+| 8    | Orchestrator                 | Aggregates sub-agent outputs into elaborated requirement with verdict                    |
+| 9    | Orchestrator                 | Posts result to GitHub: updates issue body (or adds comment), applies verdict label      |
+
+---
+
+## Requirement Analysis Data Flow Summary
+
+```text
+ GitHub Issue (#N)
+       │
+       │  /requirement-analysis
+       ▼
+ Orchestrator (classify + coordinate)
+       │
+       ├─► Context Analyst ──────────► Affected modules, related issues, patterns
+       │
+       ├─► Acceptance Criteria Writer ► Given/When/Then criteria, edge cases
+       │
+       ├─► Dependency Analyzer ──────► Dependencies table, risks, constraints
+       │
+       └─► Gap Detector ─────────────► Ambiguities, missing info, contradictions
+                                              │
+                                              ▼
+                                     Aggregated output
+                                              │
+                              ┌────────────────┼────────────────┐
+                              ▼                ▼                ▼
+                        Issue body       Verdict label     Issue comment
+                        update           (groomed /        (if --comment)
+                                         needs-clarification /
+                                         needs-decomposition)
+                              │                │                │
+                              └────────────────┼────────────────┘
+                                              ▼
+                                     GitHub Issue (#N)
+```
+
+---
+
 ## Related Documents
 
 - [concept.md](concept.md) — Vision, SDLC pipeline, and agent mesh

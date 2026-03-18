@@ -163,9 +163,23 @@ Apply the following criteria to determine the verdict:
 
 ---
 
-## 6. Post to GitHub
+## 6. Detect Platform & Post Results
 
-After compiling the elaborated requirement, post it to GitHub immediately without waiting for user input:
+Before posting, detect the hosting platform from the git remote:
+
+```bash
+git remote get-url origin
+```
+
+| Remote URL contains | Provider | Instructions |
+|---|---|---|
+| `github.com` | GitHub | See `providers/github.md` |
+| `dev.azure.com` or `visualstudio.com` | Azure DevOps | See `providers/azure-devops.md` |
+| *(anything else)* | Generic | See `providers/generic.md` |
+
+Follow the matched provider's instructions to post the elaboration. Each provider file contains the exact API calls, authentication, and output format.
+
+### GitHub (default)
 
 **Update mode (default):**
 - Use `mcp__github__update_issue` to replace the issue body with the full elaborated requirement
@@ -180,6 +194,16 @@ After compiling the elaborated requirement, post it to GitHub immediately withou
 
 **If unresolved questions exist:**
 - Post each question as a separate issue comment using `mcp__github__create_issue_comment`, tagging the relevant person
+
+### Azure DevOps
+
+- Use the Azure DevOps REST API via `curl` to update the work item description and add tags
+- See `providers/azure-devops.md` for exact API calls
+
+### Generic (fallback)
+
+- Write the elaboration to `requirement-elaboration-report.md` in the repo root
+- See `providers/generic.md` for format details
 
 Output a single confirmation line on completion:
 
