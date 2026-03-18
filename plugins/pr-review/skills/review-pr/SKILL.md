@@ -47,7 +47,7 @@ Use the **pr-reviewer** agent to:
 
 5. Post the review to the detected platform automatically — no user confirmation required:
    - **GitHub**: see `providers/github.md` — uses GitHub MCP or `gh` CLI
-   - **Azure DevOps**: see `providers/azure-devops.md` — uses `az repos pr` CLI
+   - **Azure DevOps**: see `providers/azure-devops.md` — uses `curl` with `AZURE_TOKEN` environment variable
    - **Generic / unknown**: see `providers/generic.md` — writes report to `pr-review-report.md`
 
 6. If invoked with `--fix`: apply fixes and push before posting:

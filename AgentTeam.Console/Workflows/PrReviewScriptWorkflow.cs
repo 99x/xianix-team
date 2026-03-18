@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Temporalio.Common;
 using Temporalio.Exceptions;
 using Temporalio.Workflows;
 
@@ -11,6 +12,8 @@ namespace AgentTeam.Console.Workflows;
 [Workflow("PR Review Agent:PR Review Script Workflow")]
 public class PrReviewScriptWorkflow
 {
+    // Configurable via env var; defaults to 20 minutes to give scripts headroom.
+    private static readonly TimeSpan ActivityTimeout = GetActivityTimeout();
 
     /// <summary>
     /// Runs the PR review script for the given PR. One execution per webhook.
@@ -18,28 +21,42 @@ public class PrReviewScriptWorkflow
     [WorkflowRun]
     public async Task RunAsync(PrReviewScriptInput input)
     {
+        Workflow.Logger.LogInformation(
+            "Starting PR review for {Repo}#{PrNumber} (platform: {Platform})",
+            input.RepoUrl, input.PrNumber, input.PlatformName);
+
         try
         {
-            Workflow.Logger.LogInformation(
-                "Running PR review script for {Repo}#{PrNumber} (platform: {Platform})",
-                input.RepoUrl, input.PrNumber, input.PlatformName);
-
             await Workflow.ExecuteActivityAsync(
                 (RunPrReviewScriptActivity a) => a.RunAsync(input),
-                new ActivityOptions { StartToCloseTimeout = TimeSpan.FromMinutes(15) });
+                new ActivityOptions
+                {
+                    StartToCloseTimeout = ActivityTimeout,
+                    RetryPolicy = new RetryPolicy
+                    {
+                        // Script runs are not idempotent by default; do not auto-retry.
+                        MaximumAttempts = 1,
+                    },
+                });
+
+            Workflow.Logger.LogInformation(
+                "PR review completed for {Repo}#{PrNumber}",
+                input.RepoUrl, input.PrNumber);
         }
         catch (ActivityFailureException ex)
         {
-            Workflow.Logger.LogWarning(
+            Workflow.Logger.LogError(ex,
                 "PR review failed for {Repo}#{PrNumber}: {Message}",
                 input.RepoUrl, input.PrNumber, ex.Message);
-        }
-        catch (Exception ex)
-        {
-            Workflow.Logger.LogError(ex,
-                "PR review failed for {Repo}#{PrNumber}",
-                input.RepoUrl, input.PrNumber);
+            throw;
         }
     }
 
+    private static TimeSpan GetActivityTimeout()
+    {
+        if (Environment.GetEnvironmentVariable("PR_REVIEW_TIMEOUT_MINUTES") is { Length: > 0 } raw
+            && int.TryParse(raw, out var minutes) && minutes > 0)
+            return TimeSpan.FromMinutes(minutes);
+        return TimeSpan.FromMinutes(20);
+    }
 }

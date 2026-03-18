@@ -36,8 +36,10 @@ Do not ask for confirmation at any point. Execute all steps autonomously and pro
 
    **Azure DevOps:**
    ```bash
-   az repos pr show --id <pr-number>
+   curl -s -u ":${AZURE_TOKEN}" \
+     "https://dev.azure.com/${AZURE_ORG}/${AZURE_PROJECT}/_apis/git/repositories/${AZURE_REPO}/pullrequests/${PR_NUMBER}?api-version=7.1"
    ```
+   Parse org, project, repo from `git remote get-url origin` as described in `providers/azure-devops.md`.
 
    If the PR does not exist or is already completed/abandoned, stop and output a single error line — do not ask the user what to do.
 
@@ -80,4 +82,4 @@ Do not ask for confirmation at any point. Execute all steps autonomously and pro
 
    If any step fails, output the error and stop — do not retry or ask for input.
 
-> **Note:** GitHub posting requires the GitHub MCP server to be connected, or the `gh` CLI to be installed. Azure DevOps posting requires the `az` CLI with the `azure-devops` extension. See `docs/platform-setup.md` for setup instructions.
+> **Note:** GitHub posting requires the GitHub MCP server to be connected, or the `gh` CLI to be installed. Azure DevOps posting uses `curl` with the `AZURE_TOKEN` environment variable (PAT with Pull Request Threads Read & Write scope). See `docs/platform-setup.md` for setup instructions.
