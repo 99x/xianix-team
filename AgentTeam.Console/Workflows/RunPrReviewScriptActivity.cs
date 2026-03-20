@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Temporalio.Activities;
+using Xians.Lib.Logging;
 
 namespace AgentTeam.Console.Workflows;
 
@@ -10,14 +11,19 @@ namespace AgentTeam.Console.Workflows;
 /// </summary>
 public class RunPrReviewScriptActivity
 {
+    private static readonly ILogger Logger = XiansLogger.GetLogger<RunPrReviewScriptActivity>();
+
     [Activity("RunPrReviewScript")]
     public async Task RunAsync(PrReviewScriptInput input)
     {
-        var logger = ActivityExecutionContext.Current.Logger;
         var cancellationToken = ActivityExecutionContext.Current.CancellationToken;
 
         var repoRoot = ResolveRepoRoot();
         var scriptPath = Path.Combine(repoRoot, "scripts", "run-pr-review.sh");
+
+        Logger.LogInformation(
+            "Starting PR review script for {Platform} {Repo}#{PrNumber} (script: {ScriptPath})",
+            input.PlatformName, input.RepoUrl, input.PrNumber, scriptPath);
 
         if (!File.Exists(scriptPath))
         {
@@ -67,17 +73,21 @@ public class RunPrReviewScriptActivity
         process.OutputDataReceived += (_, e) =>
         {
             if (e.Data is not null)
-                logger.LogInformation("[run-pr-review] {Line}", e.Data);
+                Logger.LogInformation("[run-pr-review] {Line}", e.Data);
         };
         process.ErrorDataReceived += (_, e) =>
         {
             if (e.Data is not null)
-                logger.LogWarning("[run-pr-review stderr] {Line}", e.Data);
+                Logger.LogWarning("[run-pr-review stderr] {Line}", e.Data);
         };
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
         await process.WaitForExitAsync(cancellationToken);
+
+        Logger.LogInformation(
+            "PR review script finished for {Repo}#{PrNumber} (exit code: {ExitCode})",
+            input.RepoUrl, input.PrNumber, process.ExitCode);
 
         if (process.ExitCode != 0)
         {

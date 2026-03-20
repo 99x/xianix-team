@@ -26,6 +26,10 @@ public class RequirementAnalysisWorkflow
             await Workflow.ExecuteActivityAsync(
                 (RunRequirementAnalysisActivity a) => a.RunAsync(input),
                 new ActivityOptions { StartToCloseTimeout = TimeSpan.FromMinutes(15) });
+
+            Workflow.Logger.LogInformation(
+                "Requirement analysis completed for {Repo}#{IssueNumber}",
+                input.RepoUrl, input.IssueNumber);
         }
         catch (ActivityFailureException ex)
         {

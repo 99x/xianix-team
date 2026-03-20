@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Temporalio.Activities;
+using Xians.Lib.Logging;
 
 namespace AgentTeam.Console.Workflows;
 
@@ -9,15 +10,21 @@ namespace AgentTeam.Console.Workflows;
 /// </summary>
 public class RunRequirementAnalysisActivity
 {
+    private static readonly ILogger Logger = XiansLogger.GetLogger<RunRequirementAnalysisActivity>();
+
     [Activity("RunRequirementAnalysis")]
     public async Task<int> RunAsync(RequirementAnalysisInput input)
     {
         var repoRoot = ResolveRepoRoot();
         var scriptPath = Path.Combine(repoRoot, "scripts", "run-requirement-analysis.sh");
 
+        Logger.LogInformation(
+            "Starting requirement analysis for {Platform} {Repo}#{IssueNumber} (script: {ScriptPath})",
+            input.PlatformName, input.RepoUrl, input.IssueNumber, scriptPath);
+
         if (!File.Exists(scriptPath))
         {
-            ActivityExecutionContext.Current.Logger.LogError(
+            Logger.LogError(
                 "run-requirement-analysis.sh not found at {ScriptPath}. Set XIANIX_REPO_ROOT to repo root if needed.", scriptPath);
             return 1;
         }
@@ -39,16 +46,15 @@ public class RunRequirementAnalysisActivity
         using var process = Process.Start(startInfo);
         if (process is null)
         {
-            ActivityExecutionContext.Current.Logger.LogError("Failed to start run-requirement-analysis.sh");
+            Logger.LogError("Failed to start run-requirement-analysis.sh");
             return 1;
         }
 
-        var logger = ActivityExecutionContext.Current.Logger;
         process.OutputDataReceived += (_, e) =>
         {
             if (e.Data is not null)
             {
-                logger.LogInformation("[run-requirement-analysis] {Line}", e.Data);
+                Logger.LogInformation("[run-requirement-analysis] {Line}", e.Data);
                 System.Console.Out.WriteLine(e.Data);
             }
         };
@@ -56,7 +62,7 @@ public class RunRequirementAnalysisActivity
         {
             if (e.Data is not null)
             {
-                logger.LogInformation("[run-requirement-analysis stderr] {Line}", e.Data);
+                Logger.LogInformation("[run-requirement-analysis stderr] {Line}", e.Data);
                 System.Console.Error.WriteLine(e.Data);
             }
         };
@@ -65,9 +71,13 @@ public class RunRequirementAnalysisActivity
 
         await process.WaitForExitAsync();
 
+        Logger.LogInformation(
+            "Requirement analysis script finished for {Repo}#{IssueNumber} (exit code: {ExitCode})",
+            input.RepoUrl, input.IssueNumber, process.ExitCode);
+
         if (process.ExitCode != 0)
         {
-            ActivityExecutionContext.Current.Logger.LogWarning(
+            Logger.LogWarning(
                 "[run-requirement-analysis] Exited with code {ExitCode}", process.ExitCode);
         }
 

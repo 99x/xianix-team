@@ -25,7 +25,7 @@ Console.CancelKeyPress += (_, e) =>
 };
 AppDomain.CurrentDomain.ProcessExit += (_, _) => cts.Cancel();
 
-// Initialize Xians Platform
+// Initialize Xians Platform. ServerLogLevel.Information enables workflow/activity log upload to Xians server.
 var xiansPlatform = await XiansPlatform.InitializeAsync(new()
 {
     ServerUrl = serverUrl,
