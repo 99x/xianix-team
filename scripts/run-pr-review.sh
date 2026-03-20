@@ -215,7 +215,7 @@ REPO_CACHE_DIR="${REPO_CACHE_DIR:-/tmp/pr-review-cache/${REPO_SLUG}}"
 REPO_CACHE_DIR_GLOBAL="${REPO_CACHE_DIR}"
 
 XIANIX_CACHE_DIR="${XIANIX_CACHE_DIR:-/tmp/pr-review-cache/xianix-team}"
-PLUGIN_DIR="${XIANIX_CACHE_DIR}/plugins/pr-review"
+PLUGIN_DIR="${XIANIX_CACHE_DIR}/plugins/pr-reviewer"
 
 # ---------------------------------------------------------------------------
 # Prerequisites check

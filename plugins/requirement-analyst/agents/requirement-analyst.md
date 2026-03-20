@@ -52,12 +52,13 @@ Before launching sub-agents:
 
 ### 3. Orchestrate Specialized Analysts
 
-Pass the issue content (title, body, comments) and relevant codebase context to each sub-agent. Launch all four analysts in parallel using the Agent tool:
+Pass the issue content (title, body, comments) and relevant codebase context to each sub-agent. Launch all five analysts in parallel using the Agent tool:
 
 - **context-analyst**: Codebase and architecture relevance — affected modules, related issues, existing patterns
 - **acceptance-criteria-writer**: Structured acceptance criteria with edge cases and boundary conditions
 - **dependency-analyzer**: Dependencies, risks, constraints, and assumptions
 - **gap-detector**: Ambiguities, missing information, contradictions, under-specification
+- **competitive-context-analyst**: Similar implementations, competitor approaches, industry patterns (via web search)
 
 ### 4. Compile Elaborated Requirement
 
@@ -148,6 +149,17 @@ Aggregate all sub-agent outputs into a single structured requirement:
 - **Related issues:** [linked issues with brief context]
 - **Existing patterns:** [relevant patterns or utilities to reuse]
 - **Suggested approach:** [high-level implementation direction]
+
+---
+
+### Competitive & Market Context
+> Similar implementations, competitor approaches, and industry patterns (from web search)
+
+- **Similar implementations:** [1–3 products/URLs and how they approach this capability]
+- **Patterns & considerations:** [notable market patterns, UX conventions, pitfalls]
+- **Implications:** [what to adopt, avoid, or clarify based on research]
+
+*(If web search not configured: "Web search not configured. Set TAVILY_API_KEY to enable.")*
 
 ---
 

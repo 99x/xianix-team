@@ -8,7 +8,7 @@ Elaborate and analyze the backlog item $ARGUMENTS.
 
 ## What This Does
 
-This command invokes the **requirement-analyst** agent which orchestrates four specialized analysts:
+This command invokes the **requirement-analyst** agent which orchestrates five specialized analysts:
 
 | Analyst | Focus |
 |---------|-------|
@@ -16,6 +16,7 @@ This command invokes the **requirement-analyst** agent which orchestrates four s
 | `acceptance-criteria-writer` | Structured acceptance criteria, edge cases, boundary conditions |
 | `dependency-analyzer` | Upstream/downstream dependencies, risks, constraints, assumptions |
 | `gap-detector` | Ambiguities, missing information, contradictions, under-specification |
+| `competitive-context-analyst` | Similar implementations, competitor approaches (via web search) |
 
 ## How to Use
 
@@ -40,6 +41,7 @@ Verdict: GROOMED | NEEDS CLARIFICATION | NEEDS DECOMPOSITION
 ### Assumptions
 ### Unresolved Questions
 ### Architecture Notes
+### Competitive & Market Context
 ```
 
 ## After the Elaboration

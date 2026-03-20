@@ -1,10 +1,10 @@
 # MCP Configuration — Runtime Setup
 
-The `requirement-analyst` plugin connects to GitHub via an MCP server for reading issues and codebase files. You must supply your own GitHub token at runtime using one of the methods below.
+The `requirement-analyst` plugin connects to **GitHub** via MCP for reading issues and codebase files. Optionally, it uses **Tavily** for web search to bring competitive and market context (similar implementations, competitor approaches, industry patterns).
 
 ---
 
-## Option 1: Personal config file (recommended)
+## GitHub (required for GitHub repos)
 
 Create a local MCP config file that lives outside the repository and is never committed:
 
@@ -12,14 +12,17 @@ Create a local MCP config file that lives outside the repository and is never co
 mkdir -p ~/.claude
 ```
 
-Create `~/.claude/my-mcp-config.json` with your real token:
+Create `~/.claude/my-mcp-config.json`:
 
 ```json
 {
   "mcpServers": {
     "github": {
-      "url": "https://api.github.com",
-      "token": "ghp_your_actual_token_here"
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_your_actual_token_here"
+      }
     }
   }
 }
@@ -31,70 +34,74 @@ Then launch Claude Code pointing to that file:
 claude --mcp-config ~/.claude/my-mcp-config.json
 ```
 
-> The `--mcp-config` flag overrides the plugin's built-in `mcp-config.json` for the session. Your personal file is never touched by the repository.
+### Environment variable substitution
 
----
-
-## Option 2: Environment variable substitution
-
-If you prefer to keep a single config file, update `~/.claude/my-mcp-config.json` to reference an environment variable instead of a hardcoded token:
-
-```json
-{
-  "mcpServers": {
-    "github": {
-      "url": "https://api.github.com",
-      "token": "${GITHUB_TOKEN}"
-    }
-  }
-}
-```
-
-Export the variable in your shell before launching:
+Use `${GITHUB_TOKEN}` in the config and export it before launching:
 
 ```bash
 export GITHUB_TOKEN=ghp_your_actual_token_here
 claude --mcp-config ~/.claude/my-mcp-config.json
 ```
 
-Add the export to your `~/.zshrc` or `~/.bashrc` to make it permanent:
-
-```bash
-echo 'export GITHUB_TOKEN=ghp_your_actual_token_here' >> ~/.zshrc
-source ~/.zshrc
-```
-
----
-
-## Generating a GitHub Token
+### Generating a GitHub Token
 
 1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
 2. Click **Generate new token (classic)**
-3. Select the following scopes:
-   - `repo` — full repository access (required to read/write issues and file contents)
-   - `read:org` — read org membership (optional, for org-owned repos)
-4. Copy the generated token and use it in your config file
+3. Select `repo` scope (required for issues and file contents)
+4. Copy the token into your config
+
+---
+
+## Web search (competitive & market context)
+
+The **competitive-context-analyst** needs web search. Two options:
+
+### DuckDuckGo (recommended — no API key)
+
+Uses [@oevortex/ddg_search](https://github.com/OEvortex/ddg_search), which scrapes DuckDuckGo:
+
+```json
+"ddg_search": {
+  "command": "npx",
+  "args": ["-y", "@oevortex/ddg_search@latest"]
+}
+```
+
+### Tavily (optional — higher quality, requires API key)
+
+Get an API key at [tavily.com](https://www.tavily.com/):
+
+```json
+"tavily": {
+  "command": "npx",
+  "args": ["-y", "tavily-mcp@latest"],
+  "env": { "TAVILY_API_KEY": "tvly_your_key" }
+}
+```
+
+If neither is configured, the competitive-context-analyst outputs *"Web search not configured."* The rest of the elaboration still runs.
 
 ---
 
 ## Verification
 
-After launching with `--mcp-config`, confirm the GitHub MCP server is connected:
+After launching with `--mcp-config`, confirm servers are connected:
 
 ```
 /mcp
 ```
 
-You should see `github` listed as a connected server with status `connected`. If it shows an error, check that your token is valid and has the required scopes.
+You should see `github` (and optionally `tavily`) listed with status `connected`.
 
 ---
 
 ## Summary
 
-| Method | Token location | Committed to repo? |
-|---|---|---|
-| `--mcp-config` with hardcoded token | `~/.claude/my-mcp-config.json` | No |
-| `--mcp-config` with `${GITHUB_TOKEN}` | Shell environment / `.zshrc` | No |
+| Server | Purpose | Required? |
+| ------ | ------- | --------- |
+| GitHub | Read/write issues, codebase files | Yes (for GitHub repos) |
+| ddg_search | Web search for competitive context (no API key) | No (recommended) |
+| Tavily | Higher-quality web search (API key) | No |
 
 ---
 

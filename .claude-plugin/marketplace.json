@@ -9,8 +9,8 @@
   },
   "plugins": [
     {
-      "name": "pr-review-plugin",
-      "source": "./plugins/pr-review",
+      "name": "pr-reviewer",
+      "source": "./plugins/pr-reviewer",
       "description": "Comprehensive PR review with specialized agents for code quality, security, test coverage, and performance analysis.",
       "version": "1.0.0",
       "keywords": ["pr-review", "pull-request", "review", "code-quality", "security", "testing"]

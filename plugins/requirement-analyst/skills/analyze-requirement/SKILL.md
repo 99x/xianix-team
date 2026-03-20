@@ -18,11 +18,13 @@ Use the **requirement-analyst** agent to:
    - **acceptance-criteria-writer** — Structured Given/When/Then criteria, edge cases, boundary conditions
    - **dependency-analyzer** — Upstream/downstream dependencies, risks, constraints, assumptions
    - **gap-detector** — Ambiguities, missing information, contradictions, under-specification
+   - **competitive-context-analyst** — Similar implementations, competitor approaches, industry patterns (via web search when Tavily is configured)
 
 3. Compile all findings into a single structured elaboration with:
    - Overall verdict: `GROOMED`, `NEEDS CLARIFICATION`, or `NEEDS DECOMPOSITION`
    - Testable acceptance criteria
    - Dependencies and risks tables
+   - Competitive & market context (when Tavily configured)
    - Unresolved questions with suggested clarifying questions
 
 4. Post the elaboration to GitHub automatically — no user confirmation required:

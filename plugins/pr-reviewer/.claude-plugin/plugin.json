@@ -1,5 +1,5 @@
 {
-    "name": "pr-review-plugin",
+    "name": "pr-reviewer",
     "version": "1.1.0",
     "description": "Comprehensive PR review plugin with specialized agents for code quality, security, test coverage, and performance analysis. Works with GitHub, Azure DevOps, Bitbucket, and any git repository.",
     "author": {

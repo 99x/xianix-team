@@ -4,105 +4,75 @@ using AgentTeam.Console.Webhooks.Parsers;
 using AgentTeam.Console.Workflows;
 using Microsoft.Extensions.Logging;
 using Xians.Lib.Agents.Core;
-using Xians.Lib.Agents.Workflows.Models;
 
 namespace AgentTeam.Console.Agents;
 
 /// <summary>
-/// PR Review Agent: registers with Xians platform and handles PR webhook events.
+/// PR Review Agent: handles PR webhook events (parse payload, start workflow).
+/// Agent registration and webhook listener are configured in Program.cs.
 /// </summary>
-public sealed class PrReviewAgent
+public static class PrReviewAgent
 {
-    private readonly dynamic _agent;
-    private readonly ILogger<PrReviewAgent> _logger;
-
-    private PrReviewAgent(dynamic agent, ILogger<PrReviewAgent> logger)
-    {
-        _agent = agent;
-        _logger = logger;
-    }
+    private static readonly WebhookParserResolver WebhookResolver = new(
+        new GitHubWebhookParser(),
+        new AzureDevOpsWebhookParser()
+    );
 
     /// <summary>
-    /// Registers the PR Review Agent with the Xians platform, including workflow and webhook handlers.
+    /// Handles a PR webhook: parses payload and starts the PR review workflow.
+    /// Invoked from Program.cs when webhook name is "pr-reviewer".
     /// </summary>
-    public static PrReviewAgent Register(XiansPlatform platform)
+    public static async Task HandleWebhookAsync(dynamic context, ILogger logger)
     {
-        using var loggerFactory = LoggerFactory.Create(b => b.AddConsole().SetMinimumLevel(LogLevel.Debug));
-        var logger = loggerFactory.CreateLogger<PrReviewAgent>();
+        var tenant = (string?)context.Webhook.TenantId;
 
-        var agent = platform.Agents.Register(new()
+        var payload = (object?)context.Webhook.Payload;
+        var rawPayload = payload switch
         {
-            Name = "PR Review Agent",
-            Category = "AIDLC",
-            Summary = "Reviews pull requests for code quality, security, and compliance.",
-            Description = "This agent reviews pull requests for code quality, security, and compliance.",
-            Version = "1.0.0",
-            Author = "99x",
-            IsTemplate = true
-        });
+            string s => s,
+            JsonElement je => je.GetRawText(),
+            not null => JsonSerializer.Serialize(payload),
+            _ => ""
+        };
 
-        agent.Workflows.DefineCustom<PrReviewScriptWorkflow>(new WorkflowOptions { Activable = false })
-            .AddActivity<RunPrReviewScriptActivity>();
+        rawPayload = NormalizePayload(rawPayload);
+        var headers = GetWebhookHeaders((object)context);
 
-        var webhookResolver = new WebhookParserResolver(
-            new GitHubWebhookParser(),
-            new AzureDevOpsWebhookParser()
-        );
-
-        var integratorWorkflow = agent.Workflows.DefineIntegrator();
-        integratorWorkflow.OnWebhook(async (context) =>
+        var prContext = WebhookResolver.Parse(rawPayload, headers);
+        if (prContext is null)
         {
-            var payload = (object?)context.Webhook.Payload;
-            var rawPayload = payload switch
-            {
-                string s => s,
-                JsonElement je => je.GetRawText(),
-                not null => JsonSerializer.Serialize(payload),
-                _ => ""
-            };
+            logger.LogWarning(
+                "Unrecognized webhook payload (length={PayloadLength}, headers={HeaderCount}). Preview: {PayloadPreview}",
+                rawPayload?.Length ?? 0,
+                headers?.Count ?? 0,
+                rawPayload?.Length > 0 ? rawPayload[..Math.Min(200, rawPayload.Length)] : "(empty)");
+            return;
+        }
 
-            rawPayload = NormalizePayload(rawPayload);
-            var headers = GetWebhookHeaders((object)context);
+        logger.LogInformation(
+            "Webhook received: [{Platform}] repo={RepoUrl} pr=#{PrNumber}",
+            prContext.PlatformName, prContext.RepoUrl, prContext.PrNumber);
 
-            var prContext = webhookResolver.Parse(rawPayload, headers);
-            if (prContext is null)
-            {
-                logger.LogWarning(
-                    "Unrecognized webhook payload (length={PayloadLength}, headers={HeaderCount}). Preview: {PayloadPreview}",
-                    rawPayload?.Length ?? 0,
-                    headers?.Count ?? 0,
-                    rawPayload?.Length > 0 ? rawPayload[..Math.Min(200, rawPayload.Length)] : "(empty)");
-                return;
-            }
+        var sourceRef = !string.IsNullOrEmpty(prContext.SourceBranch)
+            ? $"refs/heads/{prContext.SourceBranch}"
+            : null;
 
-            logger.LogInformation(
-                "Webhook received: [{Platform}] repo={RepoUrl} pr=#{PrNumber}",
-                prContext.PlatformName, prContext.RepoUrl, prContext.PrNumber);
+        var input = new PrReviewScriptInput(
+            prContext.PlatformName,
+            prContext.RepoUrl,
+            prContext.PrNumber,
+            SourceRef: sourceRef,
+            TenantId: tenant);
 
-            var sourceRef = !string.IsNullOrEmpty(prContext.SourceBranch)
-                ? $"refs/heads/{prContext.SourceBranch}"
-                : null;
+        // Deterministic workflow ID prevents duplicate reviews if the same webhook is delivered more than once.
+        // Include tenant for isolation when multiple tenants share the same process.
+        var workflowId = string.IsNullOrEmpty(tenant)
+            ? $"pr-review-{prContext.PlatformName}-{SanitizeForId(prContext.RepoUrl)}-{prContext.PrNumber}"
+            : $"pr-review-{SanitizeForId(tenant)}-{prContext.PlatformName}-{SanitizeForId(prContext.RepoUrl)}-{prContext.PrNumber}";
 
-            var input = new PrReviewScriptInput(
-                prContext.PlatformName,
-                prContext.RepoUrl,
-                prContext.PrNumber,
-                SourceRef: sourceRef);
-
-            // Deterministic workflow ID prevents duplicate reviews if the same webhook is delivered more than once.
-            var workflowId = $"pr-review-{prContext.PlatformName}-{SanitizeForId(prContext.RepoUrl)}-{prContext.PrNumber}";
-
-            logger.LogDebug("Starting workflow {WorkflowId}", workflowId);
-            await XiansContext.Workflows.StartAsync<PrReviewScriptWorkflow>(args: new[] { input }, workflowId);
-        });
-
-        return new PrReviewAgent(agent, logger);
+        logger.LogDebug("Starting workflow {WorkflowId}", workflowId);
+        await XiansContext.Workflows.StartAsync<PrReviewScriptWorkflow>(args: new[] { input }, workflowId);
     }
-
-    /// <summary>
-    /// Runs the agent (starts webhook listener and workflows).
-    /// </summary>
-    public Task RunAllAsync() => _agent.RunAllAsync();
 
     private static string NormalizePayload(string raw)
     {

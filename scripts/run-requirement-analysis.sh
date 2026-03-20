@@ -27,6 +27,8 @@
 # Optional:
 #   XIANIX_REPO       Xianix plugin marketplace repo (default: https://github.com/99x/xianix-team.git)
 #   XIANIX_CACHE_DIR  Local path for the cloned xianix-team repo (default: /tmp/requirement-analysis-cache/xianix-team)
+#   XIANIX_USE_LOCAL  Set to "1" to use XIANIX_CACHE_DIR as-is (no clone/pull) — for local dev testing
+#   TAVILY_API_KEY    Tavily API key for web search (competitive/market context). Optional.
 #   REPO_CACHE_DIR    Directory for the shared bare clone cache (default: /tmp/requirement-analysis-cache/<repo-slug>)
 #   WORKDIR           Per-run worktree directory (default: /tmp/requirement-analysis-<ISSUE_NUMBER>-<timestamp>)
 #   KEEP_WORKDIR      Set to "1" to preserve the worktree after the run (for debugging)
@@ -131,6 +133,25 @@ log "Writing MCP config"
 
 mkdir -p ~/.claude
 
+# DuckDuckGo web search (no API key) — always enabled for competitive context
+DDG_MCP='"ddg_search": {
+      "command": "npx",
+      "args": ["-y", "@oevortex/ddg_search@latest"]
+    }'
+
+# Optional Tavily server (higher quality, requires API key)
+if [ -n "${TAVILY_API_KEY:-}" ]; then
+    TAVILY_MCP=', "tavily": {
+      "command": "npx",
+      "args": ["-y", "tavily-mcp@latest"],
+      "env": {
+        "TAVILY_API_KEY": "'"${TAVILY_API_KEY}"'"
+      }
+    }'
+else
+    TAVILY_MCP=""
+fi
+
 case "$PLATFORM" in
     github)
         cat > ~/.claude/mcp-config-requirement-analysis.json <<EOF
@@ -142,14 +163,21 @@ case "$PLATFORM" in
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
       }
-    }
+    },
+    ${DDG_MCP}${TAVILY_MCP}
   }
 }
 EOF
         ;;
     azure-devops)
-        # Azure DevOps uses the REST API via curl — no MCP server needed.
         export AZURE_TOKEN="${AZURE_TOKEN}"
+        cat > ~/.claude/mcp-config-requirement-analysis.json <<EOF
+{
+  "mcpServers": {
+    ${DDG_MCP}${TAVILY_MCP}
+  }
+}
+EOF
         ;;
 esac
 
@@ -160,7 +188,9 @@ esac
 XIANIX_CACHE_DIR="${XIANIX_CACHE_DIR:-/tmp/requirement-analysis-cache/xianix-team}"
 PLUGIN_DIR="${XIANIX_CACHE_DIR}/plugins/requirement-analyst"
 
-if [ -d "${XIANIX_CACHE_DIR}/.git" ]; then
+if [ "${XIANIX_USE_LOCAL:-0}" = "1" ]; then
+    log "Using local xianix-team at ${XIANIX_CACHE_DIR} (XIANIX_USE_LOCAL=1)"
+elif [ -d "${XIANIX_CACHE_DIR}/.git" ]; then
     log "Updating xianix-team plugin repo at ${XIANIX_CACHE_DIR}"
     git -C "${XIANIX_CACHE_DIR}" pull --ff-only --quiet
 else
@@ -179,20 +209,12 @@ log "Plugin ready at ${PLUGIN_DIR}"
 ANALYSIS_PROMPT="/analyze-requirement ${ISSUE_NUMBER} ${COMMENT_FLAG}"
 log "Running: ${ANALYSIS_PROMPT}"
 
-if [ "$PLATFORM" = "github" ]; then
-    claude \
-        --dangerously-skip-permissions \
-        --verbose \
-        --plugin-dir "${PLUGIN_DIR}" \
-        --mcp-config "${HOME}/.claude/mcp-config-requirement-analysis.json" \
-        -p "${ANALYSIS_PROMPT}"
-else
-    claude \
-        --dangerously-skip-permissions \
-        --verbose \
-        --plugin-dir "${PLUGIN_DIR}" \
-        -p "${ANALYSIS_PROMPT}"
-fi
+claude \
+    --dangerously-skip-permissions \
+    --verbose \
+    --plugin-dir "${PLUGIN_DIR}" \
+    --mcp-config "${HOME}/.claude/mcp-config-requirement-analysis.json" \
+    -p "${ANALYSIS_PROMPT}"
 
 log "Requirement analysis complete"
 

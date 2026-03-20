@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Temporalio.Activities;
 
@@ -48,6 +49,18 @@ public class RunPrReviewScriptActivity
         if (!string.IsNullOrEmpty(input.SourceRef))
             startInfo.Environment["PR_SOURCE_REF"] = input.SourceRef;
 
+        // Tenant-scoped directories for isolation when multiple tenants share the same process
+        if (!string.IsNullOrEmpty(input.TenantId))
+        {
+            var baseCache = Environment.GetEnvironmentVariable("PR_REVIEW_CACHE_BASE") ?? "/tmp/pr-review-cache";
+            var tenantSafe = SanitizeForPath(input.TenantId);
+            var repoSlug = DeriveRepoSlug(input.RepoUrl);
+            startInfo.Environment["REPO_CACHE_DIR"] = Path.Combine(baseCache, tenantSafe, repoSlug);
+            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var unique = Guid.NewGuid().ToString("N")[..6];
+            startInfo.Environment["WORKDIR"] = $"/tmp/pr-review-{tenantSafe}-{input.PrNumber}-{timestamp}-{unique}";
+        }
+
         using var process = Process.Start(startInfo)
             ?? throw new InvalidOperationException("Failed to start run-pr-review.sh process.");
 
@@ -94,5 +107,30 @@ public class RunPrReviewScriptActivity
         }
 
         return Directory.GetCurrentDirectory();
+    }
+
+    /// <summary>
+    /// Derives a filesystem-safe slug from a repo URL (matches run-pr-review.sh logic).
+    /// e.g. https://github.com/org/repo.git → github.com-org-repo
+    /// </summary>
+    private static string DeriveRepoSlug(string repoUrl)
+    {
+        var s = repoUrl
+            .Replace("https://", "", StringComparison.OrdinalIgnoreCase)
+            .Replace("http://", "", StringComparison.OrdinalIgnoreCase);
+        if (s.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
+            s = s[..^4];
+        s = Regex.Replace(s, @"[/: ]", "-");
+        s = Regex.Replace(s, @"%[0-9A-Fa-f]{2}", "-");
+        return s.Trim('-');
+    }
+
+    /// <summary>
+    /// Sanitizes a string for use in filesystem paths (alphanumeric, hyphens, underscores).
+    /// </summary>
+    private static string SanitizeForPath(string value)
+    {
+        var sanitized = Regex.Replace(value, @"[^a-zA-Z0-9\-_.]", "-");
+        return sanitized.Trim('-');
     }
 }

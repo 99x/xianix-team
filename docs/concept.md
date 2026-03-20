@@ -234,7 +234,7 @@ Agent Registry
 │   ├── inputs:   [elaborated_requirement, architecture_docs, codebase]
 │   ├── outputs:  [technical_design_spec]
 │   └── reaches:  [assigned_developer, tech_lead]
-├── pr-review
+├── pr-reviewer
 │   ├── triggers: [pull_request.created, pull_request.updated]
 │   ├── inputs:   [pr_diff, architecture_rules, technical_design_spec, requirements]
 │   ├── outputs:  [review_comments, status_checks]
