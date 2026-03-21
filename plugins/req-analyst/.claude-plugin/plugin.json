@@ -1,0 +1,19 @@
+{
+    "name": "req-analyst-plugin",
+    "version": "1.0.0",
+    "description": "Requirement grooming plugin focused on user experience. Analyzes user intent, domain knowledge, competitive context, and workflow to produce well-understood, groomed requirements.",
+    "author": {
+      "name": "99x",
+      "email": "xianix@99x.io",
+      "url": "https://github.com/99x"
+    },
+    "homepage": "https://github.com/99x/xianix-team",
+    "repository": "https://github.com/99x/xianix-team",
+    "license": "MIT",
+    "keywords": ["requirement-analysis", "requirement-grooming", "user-intent", "domain-knowledge", "competitive-insights", "backlog"],
+    "commands": ["./commands/requirement-analysis.md"],
+    "skills": "./skills/",
+    "hooks": "./hooks/hooks.json",
+    "outputStyles": "./styles/",
+    "lspServers": "./.lsp.json"
+  }

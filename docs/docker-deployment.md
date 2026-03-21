@@ -149,7 +149,7 @@ run-pr-review.sh
       │  bare-clones the target repo
       │  creates an isolated git worktree for the PR branch
       │  clones/updates the xianix-team plugin repo
-      │  runs: claude --plugin-dir <plugins/pr-review> -p "/review-pr <N>"
+      │  runs: claude --plugin-dir <plugins/pr-reviewer> -p "/review-pr <N>"
       ▼
 Claude Code CLI
       │  reads the PR diff

@@ -4,28 +4,26 @@ using AgentTeam.Console.Webhooks.Parsers;
 using AgentTeam.Console.Workflows;
 using Microsoft.Extensions.Logging;
 using Xians.Lib.Agents.Core;
+using Xians.Lib.Agents.Workflows.Models;
 
 namespace AgentTeam.Console.Agents;
 
 /// <summary>
-/// PR Review Agent: handles PR webhook events (parse payload, start workflow).
+/// Requirement Analysis Agent: handles issue webhook events (parse payload, start workflow).
 /// Agent registration and webhook listener are configured in Program.cs.
 /// </summary>
-public static class PrReviewAgent
+public static class RequirementAnalysisAgent
 {
-    private static readonly WebhookParserResolver WebhookResolver = new(
-        new GitHubWebhookParser(),
-        new AzureDevOpsWebhookParser()
+    private static readonly IssueWebhookParserResolver WebhookResolver = new(
+        new GitHubIssueWebhookParser()
     );
 
     /// <summary>
-    /// Handles a PR webhook: parses payload and starts the PR review workflow.
-    /// Invoked from Program.cs when webhook name is "pr-reviewer".
+    /// Handles an issue webhook: parses payload and starts the requirement analysis workflow.
+    /// Invoked from Program.cs when webhook name is "req-analyst".
     /// </summary>
     public static async Task HandleWebhookAsync(dynamic context, ILogger logger)
     {
-        var tenant = (string?)context.Webhook.TenantId;
-
         var payload = (object?)context.Webhook.Payload;
         var rawPayload = payload switch
         {
@@ -38,40 +36,27 @@ public static class PrReviewAgent
         rawPayload = NormalizePayload(rawPayload);
         var headers = GetWebhookHeaders((object)context);
 
-        var prContext = WebhookResolver.Parse(rawPayload, headers);
-        if (prContext is null)
+        var issueContext = WebhookResolver.Parse(rawPayload, headers);
+        if (issueContext is null)
         {
             logger.LogWarning(
-                "Unrecognized webhook payload (length={PayloadLength}, headers={HeaderCount}). Preview: {PayloadPreview}",
+                "Unrecognized webhook provider, invalid payload, or non-analyzable issue event (length={PayloadLength}, headers={HeaderCount}). Preview: {PayloadPreview}",
                 rawPayload?.Length ?? 0,
                 headers?.Count ?? 0,
-                rawPayload?.Length > 0 ? rawPayload[..Math.Min(200, rawPayload.Length)] : "(empty)");
+                !string.IsNullOrEmpty(rawPayload) ? rawPayload[..Math.Min(300, rawPayload.Length)] : "(empty)");
             return;
         }
 
         logger.LogInformation(
-            "Webhook received: [{Platform}] repo={RepoUrl} pr=#{PrNumber}",
-            prContext.PlatformName, prContext.RepoUrl, prContext.PrNumber);
+            "Webhook received: [{Platform}] repo={RepoUrl} issue=#{IssueNumber}",
+            issueContext.PlatformName, issueContext.RepoUrl, issueContext.IssueNumber);
 
-        var sourceRef = !string.IsNullOrEmpty(prContext.SourceBranch)
-            ? $"refs/heads/{prContext.SourceBranch}"
-            : null;
+        var input = new RequirementAnalysisInput(
+            issueContext.PlatformName,
+            issueContext.RepoUrl,
+            issueContext.IssueNumber);
 
-        var input = new PrReviewScriptInput(
-            prContext.PlatformName,
-            prContext.RepoUrl,
-            prContext.PrNumber,
-            SourceRef: sourceRef,
-            TenantId: tenant);
-
-        // Deterministic workflow ID prevents duplicate reviews if the same webhook is delivered more than once.
-        // Include tenant for isolation when multiple tenants share the same process.
-        var workflowId = string.IsNullOrEmpty(tenant)
-            ? $"pr-review-{prContext.PlatformName}-{SanitizeForId(prContext.RepoUrl)}-{prContext.PrNumber}"
-            : $"pr-review-{SanitizeForId(tenant)}-{prContext.PlatformName}-{SanitizeForId(prContext.RepoUrl)}-{prContext.PrNumber}";
-
-        logger.LogDebug("Starting workflow {WorkflowId}", workflowId);
-        await XiansContext.Workflows.StartAsync<PrReviewScriptWorkflow>(args: new[] { input }, workflowId);
+        await XiansContext.Workflows.StartAsync<RequirementAnalysisWorkflow>(args: new[] { input }, Guid.NewGuid().ToString());
     }
 
     private static string NormalizePayload(string raw)
@@ -106,13 +91,10 @@ public static class PrReviewAgent
             using var doc = JsonDocument.Parse(trimmed);
             var root = doc.RootElement;
             if (root.TryGetProperty("payload", out var inner) && inner.ValueKind == JsonValueKind.Object &&
-                inner.TryGetProperty("pull_request", out _) && inner.TryGetProperty("repository", out _))
+                inner.TryGetProperty("issue", out _) && inner.TryGetProperty("repository", out _))
                 return inner.GetRawText();
         }
-        catch (JsonException)
-        {
-            // Not valid JSON or no payload wrapper — return trimmed form-decoded value as-is
-        }
+        catch { /* not JSON or no payload wrapper */ }
 
         return trimmed;
     }
@@ -132,27 +114,6 @@ public static class PrReviewAgent
                 return objEnum.ToDictionary(kv => kv.Key, kv => kv.Value?.ToString() ?? "", StringComparer.OrdinalIgnoreCase);
             return null;
         }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
-
-    private static string SanitizeForId(string value)
-    {
-        // Keep only alphanumeric, hyphens, dots, underscores — safe for Temporal workflow IDs
-        var span = value.AsSpan();
-        var chars = new char[span.Length];
-        var len = 0;
-        foreach (var c in span)
-        {
-            if (char.IsLetterOrDigit(c) || c == '-' || c == '.' || c == '_')
-                chars[len++] = c;
-            else if (c == '/' || c == ':')
-                chars[len++] = '-';
-        }
-        var sanitized = new string(chars, 0, len).Trim('-');
-        // Truncate so total workflow ID stays within Temporal's 1000-char limit
-        return sanitized.Length > 200 ? sanitized[^200..] : sanitized;
+        catch { return null; }
     }
 }

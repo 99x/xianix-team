@@ -23,9 +23,9 @@ The first agent shipped is the **PR Review Agent** — a fully autonomous code r
 | Document | Description |
 |----------|-------------|
 | [docs/manual-plugin.setup.md](docs/manual-plugin.setup.md) | Install and use the PR Review plugin manually via Claude Code |
-| [plugins/pr-review/docs/platform-setup.md](plugins/pr-review/docs/platform-setup.md) | Platform setup for GitHub and Azure DevOps (review posting, tokens) |
-| [plugins/pr-review/docs/git-auth.md](plugins/pr-review/docs/git-auth.md) | Runtime git credentials — how tokens are passed for clone and push |
-| [plugins/pr-review/docs/mcp-config.md](plugins/pr-review/docs/mcp-config.md) | MCP configuration reference (superseded by platform-setup.md) |
+| [plugins/pr-reviewer/docs/platform-setup.md](plugins/pr-reviewer/docs/platform-setup.md) | Platform setup for GitHub and Azure DevOps (review posting, tokens) |
+| [plugins/pr-reviewer/docs/git-auth.md](plugins/pr-reviewer/docs/git-auth.md) | Runtime git credentials — how tokens are passed for clone and push |
+| [plugins/pr-reviewer/docs/mcp-config.md](plugins/pr-reviewer/docs/mcp-config.md) | MCP configuration reference (superseded by platform-setup.md) |
 
 ### Deployment
 

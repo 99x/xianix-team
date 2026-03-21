@@ -37,7 +37,7 @@ To pin a specific branch or tag:
 Once the marketplace is added:
 
 ```
-/plugin install pr-review-plugin@xianix-tools
+/plugin install pr-reviewer@xianix-tools
 ```
 
 ### 3. Refresh updates
@@ -161,4 +161,4 @@ Same caveats as bypassPermissions — use only in safe environments.
 
 ## Related setup
 
-- **MCP & GitHub auth**: See [plugins/pr-review/docs/mcp-config.md](../plugins/pr-review/docs/mcp-config.md) and [plugins/pr-review/docs/git-auth.md](../plugins/pr-review/docs/git-auth.md).
+- **MCP & GitHub auth**: See [plugins/pr-reviewer/docs/mcp-config.md](../plugins/pr-reviewer/docs/mcp-config.md) and [plugins/pr-reviewer/docs/git-auth.md](../plugins/pr-reviewer/docs/git-auth.md).

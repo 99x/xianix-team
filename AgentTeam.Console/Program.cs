@@ -2,6 +2,8 @@ using AgentTeam.Console.Agents;
 using DotNetEnv;
 using Microsoft.Extensions.Logging;
 using Xians.Lib.Agents.Core;
+using Xians.Lib.Agents.Workflows.Models;
+using AgentTeam.Console.Workflows;
 
 // Load .env from project dir (works regardless of cwd when running)
 var envPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".env"));
@@ -23,7 +25,7 @@ Console.CancelKeyPress += (_, e) =>
 };
 AppDomain.CurrentDomain.ProcessExit += (_, _) => cts.Cancel();
 
-// Initialize Xians Platform
+// Initialize Xians Platform. ServerLogLevel.Information enables workflow/activity log upload to Xians server.
 var xiansPlatform = await XiansPlatform.InitializeAsync(new()
 {
     ServerUrl = serverUrl,
@@ -32,17 +34,42 @@ var xiansPlatform = await XiansPlatform.InitializeAsync(new()
     ConsoleLogLevel = LogLevel.Debug
 });
 
-var prReviewAgent = PrReviewAgent.Register(xiansPlatform);
+// Agent registration and webhook listener (dispatches by webhook name: pr-reviewer, req-analyst)
+using var agentLoggerFactory = LoggerFactory.Create(b => b.AddConsole().SetMinimumLevel(LogLevel.Debug));
+var agentLogger = agentLoggerFactory.CreateLogger("XianixAgent");
 
-Console.WriteLine("PR Review Agent registered. Listening for webhooks...");
+var xianixAgent = xiansPlatform.Agents.Register(new()
+{
+    Name = "Xianix Agent Team",
+    Category = "AI-DLC",
+    Summary = "A coordinated mesh of AI agents across the full software development lifecycle.",
+    Description = "A coordinated mesh of AI agents across the full software development lifecycle.",
+    Version = "1.0.0",
+    Author = "99x",
+    IsTemplate = true
+});
 
-try
+xianixAgent.Workflows.DefineCustom<PrReviewScriptWorkflow>(new WorkflowOptions { Activable = false })
+    .AddActivity<RunPrReviewScriptActivity>();
+xianixAgent.Workflows.DefineCustom<RequirementAnalysisWorkflow>(new WorkflowOptions { Activable = false })
+    .AddActivity<RunRequirementAnalysisActivity>();
+
+var integratorWorkflow = xianixAgent.Workflows.DefineIntegrator();
+integratorWorkflow.OnWebhook(async (context) =>
 {
-    await Task.WhenAll(
-        prReviewAgent.RunAllAsync()
-    ).WaitAsync(cts.Token);
-}
-catch (OperationCanceledException)
-{
-    Console.WriteLine("Shutting down gracefully...");
-}
+    var webhookName = (string?)context.Webhook.Name;
+    if (string.Equals(webhookName, "pr-reviewer", StringComparison.OrdinalIgnoreCase))
+    {
+        await PrReviewAgent.HandleWebhookAsync(context, agentLogger);
+        return;
+    }
+    if (string.Equals(webhookName, "req-analyst", StringComparison.OrdinalIgnoreCase))
+    {
+        await RequirementAnalysisAgent.HandleWebhookAsync(context, agentLogger);
+        return;
+    }
+});
+
+Console.WriteLine("Agents registered. Listening for webhooks (pr-reviewer, req-analyst)...");
+
+await xianixAgent.RunAllAsync();
