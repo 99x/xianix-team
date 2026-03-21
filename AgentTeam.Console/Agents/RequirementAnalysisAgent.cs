@@ -2,85 +2,62 @@ using System.Text.Json;
 using AgentTeam.Console.Webhooks;
 using AgentTeam.Console.Webhooks.Parsers;
 using AgentTeam.Console.Workflows;
+using Microsoft.Extensions.Logging;
 using Xians.Lib.Agents.Core;
 using Xians.Lib.Agents.Workflows.Models;
 
 namespace AgentTeam.Console.Agents;
 
 /// <summary>
-/// Requirement Analysis Agent: registers with Xians platform and handles issue webhook events.
+/// Requirement Analysis Agent: handles issue webhook events (parse payload, start workflow).
+/// Agent registration and webhook listener are configured in Program.cs.
 /// </summary>
-public sealed class RequirementAnalysisAgent
+public static class RequirementAnalysisAgent
 {
-    private readonly dynamic _agent;
-
-    private RequirementAnalysisAgent(dynamic agent) => _agent = agent;
+    private static readonly IssueWebhookParserResolver WebhookResolver = new(
+        new GitHubIssueWebhookParser()
+    );
 
     /// <summary>
-    /// Registers the Requirement Analysis Agent with the Xians platform, including workflow and webhook handlers.
+    /// Handles an issue webhook: parses payload and starts the requirement analysis workflow.
+    /// Invoked from Program.cs when webhook name is "req-analyst".
     /// </summary>
-    public static RequirementAnalysisAgent Register(XiansPlatform platform)
+    public static async Task HandleWebhookAsync(dynamic context, ILogger logger)
     {
-        var agent = platform.Agents.Register(new()
+        var payload = (object?)context.Webhook.Payload;
+        var rawPayload = payload switch
         {
-            Name = "Requirement Analysis Agent",
-            Category = "AIDLC",
-            Summary = "Elaborates backlog items into structured requirements with acceptance criteria, dependencies, and gap detection.",
-            Description = "This agent analyzes GitHub issues and backlog items to produce fully groomed requirements with acceptance criteria, dependency mapping, risk identification, and gap detection.",
-            Version = "1.0.0",
-            Author = "99x",
-            IsTemplate = false
-        });
+            string s => s,
+            JsonElement je => je.GetRawText(),
+            not null => JsonSerializer.Serialize(payload),
+            _ => ""
+        };
 
-        agent.Workflows.DefineCustom<RequirementAnalysisWorkflow>(new WorkflowOptions { Activable = false })
-            .AddActivity<RunRequirementAnalysisActivity>();
+        rawPayload = NormalizePayload(rawPayload);
+        var headers = GetWebhookHeaders((object)context);
 
-        var webhookResolver = new IssueWebhookParserResolver(
-            new GitHubIssueWebhookParser()
-        );
-
-        var integratorWorkflow = agent.Workflows.DefineIntegrator();
-        integratorWorkflow.OnWebhook(async (context) =>
+        var issueContext = WebhookResolver.Parse(rawPayload, headers);
+        if (issueContext is null)
         {
-            var payload = (object?)context.Webhook.Payload;
-            var rawPayload = payload switch
-            {
-                string s => s,
-                JsonElement je => je.GetRawText(),
-                not null => JsonSerializer.Serialize(payload),
-                _ => ""
-            };
+            logger.LogWarning(
+                "Unrecognized webhook provider, invalid payload, or non-analyzable issue event (length={PayloadLength}, headers={HeaderCount}). Preview: {PayloadPreview}",
+                rawPayload?.Length ?? 0,
+                headers?.Count ?? 0,
+                !string.IsNullOrEmpty(rawPayload) ? rawPayload[..Math.Min(300, rawPayload.Length)] : "(empty)");
+            return;
+        }
 
-            rawPayload = NormalizePayload(rawPayload);
-            var headers = GetWebhookHeaders((object)context);
+        logger.LogInformation(
+            "Webhook received: [{Platform}] repo={RepoUrl} issue=#{IssueNumber}",
+            issueContext.PlatformName, issueContext.RepoUrl, issueContext.IssueNumber);
 
-            var issueContext = webhookResolver.Parse(rawPayload, headers);
-            if (issueContext is null)
-            {
-                System.Console.WriteLine("Unrecognized webhook provider, invalid payload, or non-analyzable issue event");
-                System.Console.WriteLine($"Payload length: {rawPayload?.Length ?? 0}, Headers: {(headers?.Count ?? 0)}");
-                if (!string.IsNullOrEmpty(rawPayload))
-                    System.Console.WriteLine($"Payload preview: {(rawPayload.Length > 300 ? rawPayload[..300] + "..." : rawPayload)}");
-                return;
-            }
+        var input = new RequirementAnalysisInput(
+            issueContext.PlatformName,
+            issueContext.RepoUrl,
+            issueContext.IssueNumber);
 
-            System.Console.WriteLine($"Webhook: [{issueContext.PlatformName}] repo={issueContext.RepoUrl} issue=#{issueContext.IssueNumber}");
-
-            var input = new RequirementAnalysisInput(
-                issueContext.PlatformName,
-                issueContext.RepoUrl,
-                issueContext.IssueNumber);
-
-            await XiansContext.Workflows.StartAsync<RequirementAnalysisWorkflow>(args: new[] { input }, Guid.NewGuid().ToString());
-        });
-
-        return new RequirementAnalysisAgent(agent);
+        await XiansContext.Workflows.StartAsync<RequirementAnalysisWorkflow>(args: new[] { input }, Guid.NewGuid().ToString());
     }
-
-    /// <summary>
-    /// Runs the agent (starts webhook listener and workflows).
-    /// </summary>
-    public Task RunAllAsync() => _agent.RunAllAsync();
 
     private static string NormalizePayload(string raw)
     {

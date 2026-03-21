@@ -224,7 +224,7 @@ Each agent registers its capabilities, triggers, inputs, and outputs:
 
 ```
 Agent Registry
-├── requirement-analyst
+├── req-analyst
 │   ├── triggers: [backlog_item.created]
 │   ├── inputs:   [backlog_item, product_context, architecture_docs]
 │   ├── outputs:  [elaborated_requirement]

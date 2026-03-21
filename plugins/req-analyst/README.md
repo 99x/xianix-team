@@ -1,26 +1,34 @@
 # Requirement Analyst Plugin
 
-> Autonomous requirement elaboration for backlog items. Analyzes codebase context, writes acceptance criteria, identifies dependencies, and detects gaps — then posts the elaborated result to GitHub or Azure DevOps.
+> Requirement grooming for backlog items. Analyzes **user intent**, **domain knowledge**, **competitive context**, and **workflow** — then posts a well-understood, groomed requirement to GitHub or Azure DevOps. Focused entirely on user experience; technical design is a separate activity.
 
 ## What This Plugin Does
 
-The **requirement-analyst** plugin orchestrates a multi-dimensional analysis of backlog items (GitHub Issues or Azure DevOps Work Items) before sprint planning. It runs five specialized sub-agents in parallel and compiles their findings into a single structured requirement.
+The **req-analyst** plugin grooms requirements by understanding *why* this exists, *what* success means to users, and *how* it fits the user journey. It runs four analysts in two phases and compiles findings into a single structured requirement.
+
+**Phase 1 — Context Gathering (parallel):**
 
 | Agent | Focus |
 | ----- | ----- |
-| **context-analyst** | Codebase and architecture — affected modules, related issues, existing patterns |
-| **acceptance-criteria-writer** | Structured Given/When/Then criteria, edge cases, boundary conditions |
-| **dependency-analyzer** | Dependencies, risks, constraints, assumptions |
-| **gap-detector** | Ambiguities, missing information, contradictions, under-specification |
-| **competitive-context-analyst** | Similar implementations, competitor approaches, industry patterns (via web search) |
+| **intent-analyst** | Intent decomposition, user context, workflow, decision points |
+| **domain-analyst** | Domain knowledge, data meaning, business rules, competitive insights (via web search) |
+
+**Phase 2 — Gap & Risk Analysis:**
+
+| Agent | Focus |
+| ----- | ----- |
+| **gap-risk-analyst** | Gaps, risks, value/priority, dependencies |
+| **gap-risk-analyst** | Gaps, risks, value/priority, dependencies |
 
 ### Output
 
-The elaboration produces a structured requirement with:
-
 - **Verdict:** `GROOMED` | `NEEDS CLARIFICATION` | `NEEDS DECOMPOSITION`
-- Summary, Acceptance Criteria, Edge Cases, Dependencies, Risks & Constraints, Assumptions, Unresolved Questions, Architecture Notes, Competitive & Market Context
-- Automatic posting to the backlog platform (issue body updated or posted as comment)
+- **Summary** with intent decomposition (stated need → underlying intent → success definition)
+- **User Context & Workflow** — who, when/where, constraints, before/during/after
+- **Domain Context** — data meaning, business rules, competitive insights
+- **Gaps & Unresolved Questions**
+- **Risks, Dependencies & Assumptions**
+- Automatic posting to the backlog platform
 
 ---
 
@@ -31,7 +39,6 @@ Run the plugin interactively in your project using Claude Code (Claude CLI).
 ### Prerequisites
 
 - [Claude Code](https://docs.anthropic.com/claude-code) installed (`claude` CLI)
-- Git repository with a GitHub remote (for codebase analysis)
 - GitHub Personal Access Token with `repo` scope
 - Working directory: your project repo or a clone of the target repo
 
@@ -41,17 +48,15 @@ Launch with the plugin directory and MCP config:
 
 ```bash
 claude \
-  --plugin-dir /path/to/xianix-team/plugins/requirement-analyst \
+  --plugin-dir /path/to/xianix-team/plugins/req-analyst \
   --mcp-config ~/.claude/my-mcp-config.json
 ```
 
-> Replace `/path/to/xianix-team` with the actual path — e.g. if you cloned xianix-team to `~/xianix-team`, use `~/xianix-team/plugins/requirement-analyst`.
+> Replace `/path/to/xianix-team` with the actual path — e.g. if you cloned xianix-team to `~/xianix-team`, use `~/xianix-team/plugins/req-analyst`.
 
 ### 2. Configure MCP (GitHub + web search)
 
-Create `~/.claude/my-mcp-config.json` with your GitHub token. For **competitive/market context**, add a web search MCP. See [docs/mcp-config.md](docs/mcp-config.md) for details.
-
-**Recommended (GitHub + DuckDuckGo — no API key):**
+Create `~/.claude/my-mcp-config.json` with your GitHub token and DuckDuckGo web search. See [docs/mcp-config.md](docs/mcp-config.md) for details.
 
 ```json
 {
@@ -71,19 +76,9 @@ Create `~/.claude/my-mcp-config.json` with your GitHub token. For **competitive/
 }
 ```
 
-**Optional: Tavily** (higher quality search, requires API key from [tavily.com](https://www.tavily.com/)):
-
-```json
-"tavily": {
-  "command": "npx",
-  "args": ["-y", "tavily-mcp@latest"],
-  "env": { "TAVILY_API_KEY": "tvly_your_key" }
-}
-```
-
 ```bash
 export GITHUB_TOKEN=ghp_your_token_here
-claude --plugin-dir /path/to/xianix-team/plugins/requirement-analyst --mcp-config ~/.claude/my-mcp-config.json
+claude --plugin-dir /path/to/xianix-team/plugins/req-analyst --mcp-config ~/.claude/my-mcp-config.json
 ```
 
 ### 3. Run from your project repo
@@ -92,7 +87,7 @@ claude --plugin-dir /path/to/xianix-team/plugins/requirement-analyst --mcp-confi
 
 ```bash
 cd /path/to/your-project
-claude --plugin-dir /path/to/xianix-team/plugins/requirement-analyst --mcp-config ~/.claude/my-mcp-config.json
+claude --plugin-dir /path/to/xianix-team/plugins/req-analyst --mcp-config ~/.claude/my-mcp-config.json
 ```
 
 ### 4. Invoke the command
@@ -103,7 +98,7 @@ In the Claude chat:
 /requirement-analysis 42
 ```
 
-Elaborate issue #42. The agent will fetch the issue, analyze the codebase, run all five analysts (including competitive/market research when Tavily is configured), and post the elaborated requirement to GitHub.
+Elaborate issue #42. The agent will fetch the issue, run all five analysts (including competitive/market research via DuckDuckGo), and post the elaborated requirement to GitHub.
 
 **Post as comment instead of updating the issue body:**
 
@@ -184,7 +179,7 @@ GIT_TOKEN=pat_xxx \
 1. Creates or updates a shared **bare clone** of the target repo (`REPO_CACHE_DIR`)
 2. Creates an isolated **per-run worktree** (`WORKDIR`)
 3. Writes MCP config with injected token (never committed)
-4. Clones/updates **xianix-team** and loads the requirement-analyst plugin
+4. Clones/updates **xianix-team** and loads the req-analyst plugin
 5. Runs `claude -p "/analyze-requirement <ISSUE_NUMBER>"` inside the worktree
 6. Removes the worktree after the run (unless `KEEP_WORKDIR=1`)
 
@@ -195,7 +190,6 @@ GIT_TOKEN=pat_xxx \
 | `XIANIX_REPO` | `https://github.com/99x/xianix-team.git` | Override plugin source repo |
 | `XIANIX_CACHE_DIR` | `/tmp/requirement-analysis-cache/xianix-team` | Path for cloned xianix-team |
 | `XIANIX_USE_LOCAL` | `0` | Set to `1` to use XIANIX_CACHE_DIR as-is (no clone/pull) — for local dev |
-| `TAVILY_API_KEY` | *(none)* | Tavily API key for higher-quality search. Optional — DuckDuckGo (no key) is used by default. |
 | `REPO_CACHE_DIR` | `/tmp/requirement-analysis-cache/<repo-slug>` | Path for bare clone |
 | `WORKDIR` | `/tmp/requirement-analysis-<ISSUE>-<timestamp>` | Per-run worktree |
 | `KEEP_WORKDIR` | `0` | Set to `1` to preserve worktree after run (debugging) |

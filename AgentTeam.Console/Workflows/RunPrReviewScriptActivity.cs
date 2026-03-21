@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Temporalio.Activities;
+using Xians.Lib.Agents.Core;
 using Xians.Lib.Logging;
 
 namespace AgentTeam.Console.Workflows;
@@ -17,6 +18,13 @@ public class RunPrReviewScriptActivity
     public async Task RunAsync(PrReviewScriptInput input)
     {
         var cancellationToken = ActivityExecutionContext.Current.CancellationToken;
+
+        await XiansContext.Metrics
+            .WithCustomIdentifier($"{input.PlatformName}:{input.RepoUrl}#{input.PrNumber}")
+            .WithMetadata("platform", input.PlatformName)
+            .WithMetadata("repo", input.RepoUrl)
+            .WithMetric("pr_reviews", "started", 1, "count")
+            .ReportAsync();
 
         var repoRoot = ResolveRepoRoot();
         var scriptPath = Path.Combine(repoRoot, "scripts", "run-pr-review.sh");
@@ -91,9 +99,22 @@ public class RunPrReviewScriptActivity
 
         if (process.ExitCode != 0)
         {
+            await XiansContext.Metrics
+                .WithCustomIdentifier($"{input.PlatformName}:{input.RepoUrl}#{input.PrNumber}")
+                .WithMetadata("platform", input.PlatformName)
+                .WithMetadata("repo", input.RepoUrl)
+                .WithMetric("pr_reviews", "failed", 1, "count")
+                .ReportAsync();
             throw new InvalidOperationException(
                 $"run-pr-review.sh exited with code {process.ExitCode} for {input.PlatformName} PR #{input.PrNumber} ({input.RepoUrl}).");
         }
+
+        await XiansContext.Metrics
+            .WithCustomIdentifier($"{input.PlatformName}:{input.RepoUrl}#{input.PrNumber}")
+            .WithMetadata("platform", input.PlatformName)
+            .WithMetadata("repo", input.RepoUrl)
+            .WithMetric("pr_reviews", "completed", 1, "count")
+            .ReportAsync();
     }
 
     private static string ResolveRepoRoot()

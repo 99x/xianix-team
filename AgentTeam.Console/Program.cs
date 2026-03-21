@@ -34,9 +34,9 @@ var xiansPlatform = await XiansPlatform.InitializeAsync(new()
     ConsoleLogLevel = LogLevel.Debug
 });
 
-// PR Review Agent: registration and webhook listener (invoked when webhook name is "pr-reviewer")
-using var prReviewLoggerFactory = LoggerFactory.Create(b => b.AddConsole().SetMinimumLevel(LogLevel.Debug));
-var prReviewLogger = prReviewLoggerFactory.CreateLogger("PrReviewAgent");
+// Agent registration and webhook listener (dispatches by webhook name: pr-reviewer, req-analyst)
+using var agentLoggerFactory = LoggerFactory.Create(b => b.AddConsole().SetMinimumLevel(LogLevel.Debug));
+var agentLogger = agentLoggerFactory.CreateLogger("XianixAgent");
 
 var xianixAgent = xiansPlatform.Agents.Register(new()
 {
@@ -51,20 +51,25 @@ var xianixAgent = xiansPlatform.Agents.Register(new()
 
 xianixAgent.Workflows.DefineCustom<PrReviewScriptWorkflow>(new WorkflowOptions { Activable = false })
     .AddActivity<RunPrReviewScriptActivity>();
+xianixAgent.Workflows.DefineCustom<RequirementAnalysisWorkflow>(new WorkflowOptions { Activable = false })
+    .AddActivity<RunRequirementAnalysisActivity>();
 
 var integratorWorkflow = xianixAgent.Workflows.DefineIntegrator();
 integratorWorkflow.OnWebhook(async (context) =>
 {
-    if (!string.Equals(context.Webhook.Name, "pr-reviewer", StringComparison.OrdinalIgnoreCase))
+    var webhookName = (string?)context.Webhook.Name;
+    if (string.Equals(webhookName, "pr-reviewer", StringComparison.OrdinalIgnoreCase))
+    {
+        await PrReviewAgent.HandleWebhookAsync(context, agentLogger);
         return;
-    await PrReviewAgent.HandleWebhookAsync(context, prReviewLogger);
+    }
+    if (string.Equals(webhookName, "req-analyst", StringComparison.OrdinalIgnoreCase))
+    {
+        await RequirementAnalysisAgent.HandleWebhookAsync(context, agentLogger);
+        return;
+    }
 });
 
-var requirementAnalysisAgent = RequirementAnalysisAgent.Register(xiansPlatform);
+Console.WriteLine("Agents registered. Listening for webhooks (pr-reviewer, req-analyst)...");
 
-Console.WriteLine("PR Review Agent registered. Listening for webhooks...");
-
-await Task.WhenAll(
-    xianixAgent.RunAllAsync(),
-    requirementAnalysisAgent.RunAllAsync()
-);
+await xianixAgent.RunAllAsync();

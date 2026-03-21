@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Temporalio.Activities;
+using Xians.Lib.Agents.Core;
 using Xians.Lib.Logging;
 
 namespace AgentTeam.Console.Workflows;
@@ -15,6 +16,13 @@ public class RunRequirementAnalysisActivity
     [Activity("RunRequirementAnalysis")]
     public async Task<int> RunAsync(RequirementAnalysisInput input)
     {
+        await XiansContext.Metrics
+            .WithCustomIdentifier($"{input.PlatformName}:{input.RepoUrl}#{input.IssueNumber}")
+            .WithMetadata("platform", input.PlatformName)
+            .WithMetadata("repo", input.RepoUrl)
+            .WithMetric("requirement_analyses", "started", 1, "count")
+            .ReportAsync();
+
         var repoRoot = ResolveRepoRoot();
         var scriptPath = Path.Combine(repoRoot, "scripts", "run-requirement-analysis.sh");
 
@@ -26,6 +34,12 @@ public class RunRequirementAnalysisActivity
         {
             Logger.LogError(
                 "run-requirement-analysis.sh not found at {ScriptPath}. Set XIANIX_REPO_ROOT to repo root if needed.", scriptPath);
+            await XiansContext.Metrics
+                .WithCustomIdentifier($"{input.PlatformName}:{input.RepoUrl}#{input.IssueNumber}")
+                .WithMetadata("platform", input.PlatformName)
+                .WithMetadata("repo", input.RepoUrl)
+                .WithMetric("requirement_analyses", "failed", 1, "count")
+                .ReportAsync();
             return 1;
         }
 
@@ -47,6 +61,12 @@ public class RunRequirementAnalysisActivity
         if (process is null)
         {
             Logger.LogError("Failed to start run-requirement-analysis.sh");
+            await XiansContext.Metrics
+                .WithCustomIdentifier($"{input.PlatformName}:{input.RepoUrl}#{input.IssueNumber}")
+                .WithMetadata("platform", input.PlatformName)
+                .WithMetadata("repo", input.RepoUrl)
+                .WithMetric("requirement_analyses", "failed", 1, "count")
+                .ReportAsync();
             return 1;
         }
 
@@ -74,6 +94,14 @@ public class RunRequirementAnalysisActivity
         Logger.LogInformation(
             "Requirement analysis script finished for {Repo}#{IssueNumber} (exit code: {ExitCode})",
             input.RepoUrl, input.IssueNumber, process.ExitCode);
+
+        var metricName = process.ExitCode == 0 ? "completed" : "failed";
+        await XiansContext.Metrics
+            .WithCustomIdentifier($"{input.PlatformName}:{input.RepoUrl}#{input.IssueNumber}")
+            .WithMetadata("platform", input.PlatformName)
+            .WithMetadata("repo", input.RepoUrl)
+            .WithMetric("requirement_analyses", metricName, 1, "count")
+            .ReportAsync();
 
         if (process.ExitCode != 0)
         {

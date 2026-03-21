@@ -1,6 +1,6 @@
 # Backlog Setup — Using GitHub Issues
 
-The `requirement-analyst` plugin uses GitHub Issues as the backlog source. This guide explains how to structure your issues for best results with the agent.
+The `req-analyst` plugin uses GitHub Issues as the backlog source. This guide explains how to structure your issues for best results with the agent.
 
 ---
 

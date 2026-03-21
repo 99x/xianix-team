@@ -28,7 +28,6 @@
 #   XIANIX_REPO       Xianix plugin marketplace repo (default: https://github.com/99x/xianix-team.git)
 #   XIANIX_CACHE_DIR  Local path for the cloned xianix-team repo (default: /tmp/requirement-analysis-cache/xianix-team)
 #   XIANIX_USE_LOCAL  Set to "1" to use XIANIX_CACHE_DIR as-is (no clone/pull) — for local dev testing
-#   TAVILY_API_KEY    Tavily API key for web search (competitive/market context). Optional.
 #   REPO_CACHE_DIR    Directory for the shared bare clone cache (default: /tmp/requirement-analysis-cache/<repo-slug>)
 #   WORKDIR           Per-run worktree directory (default: /tmp/requirement-analysis-<ISSUE_NUMBER>-<timestamp>)
 #   KEEP_WORKDIR      Set to "1" to preserve the worktree after the run (for debugging)
@@ -119,7 +118,7 @@ git -C "${REPO_CACHE_DIR}" worktree add --detach "$WORKDIR"
 
 cd "$WORKDIR"
 
-# Checkout the default branch for codebase context
+# Checkout the default branch (provides git context for platform detection)
 DEFAULT_BRANCH=$(git -C "${REPO_CACHE_DIR}" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||' || echo "main")
 git checkout "${DEFAULT_BRANCH}" 2>/dev/null || git checkout main 2>/dev/null || log "Warning: could not checkout default branch"
 
@@ -133,24 +132,11 @@ log "Writing MCP config"
 
 mkdir -p ~/.claude
 
-# DuckDuckGo web search (no API key) — always enabled for competitive context
+# DuckDuckGo web search (no API key) — always enabled for domain/competitive context
 DDG_MCP='"ddg_search": {
       "command": "npx",
       "args": ["-y", "@oevortex/ddg_search@latest"]
     }'
-
-# Optional Tavily server (higher quality, requires API key)
-if [ -n "${TAVILY_API_KEY:-}" ]; then
-    TAVILY_MCP=', "tavily": {
-      "command": "npx",
-      "args": ["-y", "tavily-mcp@latest"],
-      "env": {
-        "TAVILY_API_KEY": "'"${TAVILY_API_KEY}"'"
-      }
-    }'
-else
-    TAVILY_MCP=""
-fi
 
 case "$PLATFORM" in
     github)
@@ -164,7 +150,7 @@ case "$PLATFORM" in
         "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
       }
     },
-    ${DDG_MCP}${TAVILY_MCP}
+    ${DDG_MCP}
   }
 }
 EOF
@@ -174,7 +160,7 @@ EOF
         cat > ~/.claude/mcp-config-requirement-analysis.json <<EOF
 {
   "mcpServers": {
-    ${DDG_MCP}${TAVILY_MCP}
+    ${DDG_MCP}
   }
 }
 EOF
@@ -186,7 +172,7 @@ esac
 # ---------------------------------------------------------------------------
 
 XIANIX_CACHE_DIR="${XIANIX_CACHE_DIR:-/tmp/requirement-analysis-cache/xianix-team}"
-PLUGIN_DIR="${XIANIX_CACHE_DIR}/plugins/requirement-analyst"
+PLUGIN_DIR="${XIANIX_CACHE_DIR}/plugins/req-analyst"
 
 if [ "${XIANIX_USE_LOCAL:-0}" = "1" ]; then
     log "Using local xianix-team at ${XIANIX_CACHE_DIR} (XIANIX_USE_LOCAL=1)"

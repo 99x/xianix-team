@@ -16,8 +16,8 @@
       "keywords": ["pr-review", "pull-request", "review", "code-quality", "security", "testing"]
     },
     {
-      "name": "requirement-analyst-plugin",
-      "source": "./plugins/requirement-analyst",
+      "name": "req-analyst-plugin",
+      "source": "./plugins/req-analyst",
       "description": "Requirement analysis plugin that elaborates backlog items with structured acceptance criteria, dependency mapping, risk identification, and gap detection.",
       "version": "1.0.0",
       "keywords": ["requirement-analysis", "backlog", "grooming", "acceptance-criteria", "gap-detection"]
