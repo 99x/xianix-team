@@ -3,66 +3,560 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Xianix Team</title>
+    <title>Xianix Team — AI-DLC for Software Development</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
 
+    <!-- ── Nav ── -->
     <nav>
-      <a class="nav-logo" href="#">Xianix</a>
+      <a class="nav-logo" href="#">
+        <div class="logo-container">
+          <span class="logo-name">Xianix</span>
+          <div class="by-99x-container">
+            <span class="by-99x">by</span>
+            <img src="img/99xlogo.svg" alt="99x Logo" class="logo-99x" />
+          </div>
+        </div>
+      </a>
       <ul class="nav-links">
-        <li><a href="#features">Features</a></li>
+        <li><a href="#principles">Principles</a></li>
+        <li><a href="#transformation">AI-DLC</a></li>
+        <li><a href="#pipeline">Pipeline</a></li>
+        <li><a href="#agents">Agents</a></li>
+        <li><a href="#story">Day in the Life</a></li>
         <li><a href="https://github.com/99x/xianix-team" target="_blank">GitHub</a></li>
       </ul>
     </nav>
 
+    <!-- ── Hero ── -->
     <section class="hero">
-      <span class="hero-badge">99x · AI Agent Team</span>
-      <h1>Supercharge your team<br />with <span>AI agents</span></h1>
+      <span class="hero-badge">99x · AI Agent Team · from SLDC to AI-DLC</span>
+      <h1>Humans and AI agents,<br /><span>working at 99x speed</span></h1>
       <p>
-        Xianix is an AI-powered agent team that automates PR reviews, requirement
-        analysis, and more — right inside your existing workflows.
+        The SDLC is becoming the <strong>AI-DLC</strong> — an AI-Driven Lifecycle where
+        a coordinated mesh of agents seamlessly collaborate
+        so your human engineers can focus on what only humans can do.
       </p>
       <div class="hero-actions">
         <a class="btn btn-primary" href="https://github.com/99x/xianix-team" target="_blank">
           Get Started
         </a>
-        <a class="btn btn-outline" href="https://github.com/99x/xianix-team/tree/main/docs" target="_blank">
-          Read the Docs
+        <a class="btn btn-outline" href="#agents">
+          Meet the Agents
         </a>
       </div>
+      <div class="hero-meta">
+        <span>GitHub &amp; Azure DevOps</span>
+        <span class="dot">·</span>
+        <span>Claude-powered</span>
+        <span class="dot">·</span>
+        <span>Docker-ready</span>
+        <span class="dot">·</span>
+        <span>Open Source</span>
+      </div>
     </section>
 
-    <section class="features" id="features">
-      <h2 class="section-title">What Xianix can do</h2>
-      <div class="cards">
-        <div class="card">
-          <div class="card-icon">🔍</div>
-          <h3>PR Reviewer</h3>
-          <p>Automated pull-request reviews with deep context awareness across GitHub and Azure DevOps.</p>
+
+    <!-- ── Agile → AI-DLC Transformation ── -->
+    <section class="section section-alt" id="transformation">
+      <div class="section-inner">
+        <p class="section-label">The Shift</p>
+        <h2 class="section-title">From traditional Agile to AI-DLC</h2>
+        <p class="section-subtitle">AI-DLC is a fundamental reimagining of software engineering
+           — moving away from human-driven, long-running processes toward AI-centric collaboration where 
+           AI initiates tasks rather than passively assisting.</p>
+
+        <!-- Vocabulary comparison -->
+        <div class="transform-block">
+          <h3 class="transform-heading">
+            <span class="transform-icon"><i data-lucide="book-open"></i></span>
+            Modernising the vocabulary and the meaning of delivery
+          </h3>
+          <div class="vocab-cards">
+
+            <div class="vocab-card">
+              <div class="vocab-side vocab-side-old">
+                <span class="vocab-badge vocab-badge-old">Traditional Agile</span>
+                <span class="vocab-term-old">Sprints</span>
+                <p>Multi-week planned delivery cycles</p>
+              </div>
+              <div class="vocab-divider"><span class="vocab-divider-arrow">→</span></div>
+              <div class="vocab-side vocab-side-new">
+                <span class="vocab-badge vocab-badge-new">AI-DLC</span>
+                <span class="vocab-term-new">Bolts</span>
+                <p>Rapid, intense cycles of continuous build-validation lasting hours or days</p>
+              </div>
+            </div>
+
+            <div class="vocab-card">
+              <div class="vocab-side vocab-side-old">
+                <span class="vocab-badge vocab-badge-old">Traditional Agile</span>
+                <span class="vocab-term-old">Epics</span>
+                <p>Large, static backlogs of pre-planned work</p>
+              </div>
+              <div class="vocab-divider"><span class="vocab-divider-arrow">→</span></div>
+              <div class="vocab-side vocab-side-new">
+                <span class="vocab-badge vocab-badge-new">AI-DLC</span>
+                <span class="vocab-term-new">Intents</span>
+                <p>High-level statements of business purpose that AI decomposes into actionable tasks</p>
+              </div>
+            </div>
+
+            <div class="vocab-card">
+              <div class="vocab-side vocab-side-old">
+                <span class="vocab-badge vocab-badge-old">Traditional Agile</span>
+                <span class="vocab-term-old">Subdomains</span>
+                <p>Conceptual groupings within a bounded context</p>
+              </div>
+              <div class="vocab-divider"><span class="vocab-divider-arrow">→</span></div>
+              <div class="vocab-side vocab-side-new">
+                <span class="vocab-badge vocab-badge-new">AI-DLC</span>
+                <span class="vocab-term-new">Units</span>
+                <p>Cohesive, self-contained elements designed for independent deployment and measurable value</p>
+              </div>
+            </div>
+
+            <div class="vocab-card">
+              <div class="vocab-side vocab-side-old">
+                <span class="vocab-badge vocab-badge-old">Traditional Agile</span>
+                <span class="vocab-term-old">Standups</span>
+                <p>Status update meetings for human coordination</p>
+              </div>
+              <div class="vocab-divider"><span class="vocab-divider-arrow">→</span></div>
+              <div class="vocab-side vocab-side-new">
+                <span class="vocab-badge vocab-badge-new">AI-DLC</span>
+                <span class="vocab-term-new">Mob Elaboration</span>
+                <p>Real-time rituals where the team validates AI-generated proposals live on a shared screen</p>
+              </div>
+            </div>
+
+          </div>
         </div>
-        <div class="card">
-          <div class="card-icon">📋</div>
-          <h3>Requirement Analyst</h3>
-          <p>Breaks down product requirements into actionable insights using intent and domain analysis agents.</p>
+
+        <!-- Human as loss function -->
+        <div class="transform-block">
+          <h3 class="transform-heading">
+          <span class="transform-icon"><i data-lucide="compass"></i></span>
+            The human as a "Loss Function"
+          </h3>
+          <p class="transform-intro">The human developer's role shifts from heavy lifting to strategic oversight — acting as the critical stop-gate that steers the AI system toward the right outcome.</p>
+          <div class="loss-grid">
+            <div class="loss-card">
+              <div class="loss-icon"><i data-lucide="map"></i></div>
+              <h4>Provides Context</h4>
+              <p>AI systematically creates detailed work plans; humans provide the contextual understanding to prune wasteful downstream efforts before they happen.</p>
+            </div>
+            <div class="loss-card">
+              <div class="loss-icon"><i data-lucide="check-circle"></i></div>
+              <h4>Validates at Junctures</h4>
+              <p>Humans confirm AI decisions at critical architectural trade-offs — Lambda vs. DynamoDB, sync vs. async — ensuring safety and business alignment.</p>
+            </div>
+            <div class="loss-card">
+              <div class="loss-icon"><i data-lucide="navigation"></i></div>
+              <h4>Steers the Journey</h4>
+              <p>Like a navigator using Google Maps, the human sets the destination (the Intent) and course-corrects while AI provides step-by-step directions via task decomposition.</p>
+            </div>
+          </div>
         </div>
-        <div class="card">
-          <div class="card-icon">⚙️</div>
-          <h3>Pluggable Architecture</h3>
-          <p>Add, remove, or extend agent plugins without touching the core runtime — built to grow with your team.</p>
-        </div>
-        <div class="card">
-          <div class="card-icon">🐳</div>
-          <h3>Docker-ready</h3>
-          <p>Ship and run anywhere with first-class Docker and Docker Compose support out of the box.</p>
+
+      </div>
+    </section>
+
+    <!-- ── Day in the Life ── -->
+    <section class="section" id="story">
+      <div class="section-inner">
+        <p class="section-label">See it in action</p>
+        <h2 class="section-title">A day in the life</h2>
+        <p class="section-subtitle">A feature travels from backlog to production with every agent doing its job at the right moment.</p>
+        <div class="story-timeline">
+          <div class="story-step">
+            <div class="story-dot" data-phase="backlog"></div>
+            <div class="story-content">
+              <div class="story-time">Morning</div>
+              <h4>A backlog item is created</h4>
+              <p>The product owner creates: <em>"As a user, I want to export reports as PDF."</em> Within minutes, the <strong>Requirement Analyst</strong> analyses it against the existing reporting module, identifies that the current export only supports CSV, flags questions about page layout and chart embedding, and sends those precise questions to the PO on Slack.</p>
+            </div>
+          </div>
+          <div class="story-step">
+            <div class="story-dot" data-phase="grooming"></div>
+            <div class="story-content">
+              <div class="story-time">Mid-morning</div>
+              <h4>Requirements are groomed</h4>
+              <p>The PO answers the questions. The agent updates the item with full acceptance criteria, edge cases (empty reports, large datasets, special characters), and dependency notes (needs a PDF rendering library). The item is marked groomed and ready for sprint planning.</p>
+            </div>
+          </div>
+          <div class="story-step">
+            <div class="story-dot" data-phase="design"></div>
+            <div class="story-content">
+              <div class="story-time">Sprint planning</div>
+              <h4>Technical design is produced</h4>
+              <p>The team pulls the item into the sprint. The <strong>Technical Designer</strong> produces a spec: extend the <code>IReportExporter</code> interface, add a <code>PdfReportExporter</code> implementation using the existing renderer abstraction, configure page size, and update the export endpoint. It flags that the PDF library choice should be reviewed by the tech lead.</p>
+            </div>
+          </div>
+          <div class="story-step">
+            <div class="story-dot" data-phase="dev"></div>
+            <div class="story-content">
+              <div class="story-time">Afternoon</div>
+              <h4>Developer builds at 10x speed</h4>
+              <p>The developer picks up the spec. With the design as context, their AI coding assistant understands exactly what to build. The developer focuses on nuanced rendering logic while AI handles the boilerplate — interface implementation, DI registration, configuration binding. They finish in a fraction of the usual time.</p>
+            </div>
+          </div>
+          <div class="story-step">
+            <div class="story-dot" data-phase="review"></div>
+            <div class="story-content">
+              <div class="story-time">End of day</div>
+              <h4>PR is reviewed automatically</h4>
+              <p>The developer opens a PR. The <strong>PR Reviewer</strong> checks it against the architecture (correct layering? dependency direction?), against the requirements (all acceptance criteria addressed?), and against code standards. It posts a comment: architecture checks pass, but one acceptance criterion (special characters in report titles) isn't covered. The developer adds handling and pushes.</p>
+            </div>
+          </div>
+          <div class="story-step">
+            <div class="story-dot" data-phase="test"></div>
+            <div class="story-content">
+              <div class="story-time">Next morning</div>
+              <h4>Risk-based test cases are generated</h4>
+              <p>The PR is approved. The <strong>Test Planner</strong> identifies the highest-risk areas: PDF rendering with large datasets, special character handling, and the interaction between the new exporter and the existing CSV path. The QA engineer runs the targeted tests, finds a layout issue with wide tables, and the developer fixes it.</p>
+            </div>
+          </div>
+          <div class="story-step">
+            <div class="story-dot" data-phase="docs"></div>
+            <div class="story-content">
+              <div class="story-time">Merge</div>
+              <h4>Docs are kept in sync automatically</h4>
+              <p>The code is merged. The <strong>Doc Maintainer</strong> updates the API documentation with the new export endpoint and adds a section to the component docs about the PDF exporter. Docs are never stale again.</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
+
+    <!-- ── Core Agents ── -->
+    <section class="section" id="agents">
+      <div class="section-inner">
+        <p class="section-label">Core Pipeline</p>
+        <h2 class="section-title">The agent team</h2>
+        <p class="section-subtitle">Six specialized agents cover every phase of the SDLC, each with a clear trigger, well-defined output, and a human touchpoint.</p>
+
+        <div class="agent-grid">
+
+          <!-- Requirement Analyst -->
+          <div class="agent-card" data-phase="backlog">
+            <div class="agent-header">
+              <span class="agent-icon"><i data-lucide="clipboard-list"></i></span>
+              <div>
+                <div class="agent-phase-tag">Backlog · Grooming</div>
+                <h3 class="agent-name">Requirement Analyst</h3>
+              </div>
+            </div>
+            <p class="agent-trigger"><strong>Trigger:</strong> A new backlog item (story, task, bug) is created.</p>
+            <ul class="agent-capabilities">
+              <li>Cross-references the item against existing product, architecture, and related stories</li>
+              <li>Expands terse descriptions into structured requirements with acceptance criteria and edge cases</li>
+              <li>Flags ambiguities, contradictions, and under-specified criteria</li>
+              <li>Sends targeted, precise questions to the item creator — not vague "can you clarify?" messages</li>
+              <li>Iteratively refines until the item meets a defined "groomed" threshold</li>
+            </ul>
+            <div class="agent-output">
+              <span class="output-label">Output</span>
+              Fully elaborated backlog item with structured acceptance criteria, identified risks, resolved open questions
+            </div>
+            <div class="agent-human">
+              <span class="human-label"><i data-lucide="user"></i> Human touchpoint</span>
+              Product owner reviews the elaborated item and decides when it's ready for sprint planning
+            </div>
+          </div>
+
+          <!-- Sprint Planning -->
+          <div class="agent-card" data-phase="planning">
+            <div class="agent-header">
+              <span class="agent-icon"><i data-lucide="calendar-days"></i></span>
+              <div>
+                <div class="agent-phase-tag">Sprint Planning</div>
+                <h3 class="agent-name">Sprint Planning Agent</h3>
+              </div>
+            </div>
+            <p class="agent-trigger"><strong>Trigger:</strong> A groomed backlog item is moved into a sprint by a human.</p>
+            <ul class="agent-capabilities">
+              <li>Analyses team velocity, current sprint load, and individual availability</li>
+              <li>Maps dependencies between sprint items and flags sequencing constraints</li>
+              <li>Highlights items with high complexity, cross-cutting concerns, or external blockers</li>
+              <li>Recommends sprint composition adjustments when overloaded or misaligned</li>
+            </ul>
+            <div class="agent-output">
+              <span class="output-label">Output</span>
+              Sprint risk report, dependency graph, and capacity recommendations
+            </div>
+            <div class="agent-human">
+              <span class="human-label"><i data-lucide="user"></i> Human touchpoint</span>
+              The team makes final sprint commitment decisions — the agent informs, the team decides
+            </div>
+          </div>
+
+          <!-- Technical Designer -->
+          <div class="agent-card" data-phase="design">
+            <div class="agent-header">
+              <span class="agent-icon"><i data-lucide="layers"></i></span>
+              <div>
+                <div class="agent-phase-tag">Design · Specification</div>
+                <h3 class="agent-name">Technical Designer</h3>
+              </div>
+            </div>
+            <p class="agent-trigger"><strong>Trigger:</strong> A backlog item is committed to a sprint and assigned to a developer.</p>
+            <ul class="agent-capabilities">
+              <li>Reviews requirements against the current system architecture, code structure, and conventions</li>
+              <li>Produces a technical design doc: affected components, data model changes, API contracts, integration points</li>
+              <li>Enforces established patterns (layering, dependency direction, naming) and flags deviations</li>
+              <li>Provides implementation guidance: which files to modify, what interfaces to implement, what tests to write</li>
+            </ul>
+            <div class="agent-output">
+              <span class="output-label">Output</span>
+              Technical design spec aligned with the architecture, ready for a developer to pick up
+            </div>
+            <div class="agent-human">
+              <span class="human-label"><i data-lucide="user"></i> Human touchpoint</span>
+              Developer (and optionally a senior engineer) reviews the design; they own the final approach
+            </div>
+          </div>
+
+          <!-- PR Reviewer -->
+          <div class="agent-card" data-phase="review">
+            <div class="agent-header">
+              <span class="agent-icon"><i data-lucide="git-pull-request"></i></span>
+              <div>
+                <div class="agent-phase-tag">Code Review</div>
+                <h3 class="agent-name">PR Reviewer</h3>
+              </div>
+            </div>
+            <p class="agent-trigger"><strong>Trigger:</strong> A pull request is created or updated.</p>
+            <ul class="agent-capabilities">
+              <li>Verifies implementation satisfies acceptance criteria from the original requirements</li>
+              <li>Checks adherence to architecture: layering rules, dependency direction, naming conventions</li>
+              <li>Evaluates readability, complexity, error handling, and coding standards</li>
+              <li>Flags high-risk changes (security-sensitive code, data migrations, public API changes)</li>
+              <li>Posts structured review comments with clear pass/fail per check and actionable recommendations</li>
+            </ul>
+            <div class="agent-output">
+              <span class="output-label">Output</span>
+              PR review with categorized findings (architecture, functional, quality, risk) as comments or status checks
+            </div>
+            <div class="agent-human">
+              <span class="human-label"><i data-lucide="user"></i> Human touchpoint</span>
+              Developer addresses feedback; human reviewer does final sign-off, especially for high-risk changes
+            </div>
+          </div>
+
+          <!-- Test Planner -->
+          <div class="agent-card" data-phase="test">
+            <div class="agent-header">
+              <span class="agent-icon"><i data-lucide="microscope"></i></span>
+              <div>
+                <div class="agent-phase-tag">Quality Assurance</div>
+                <h3 class="agent-name">Test Planner</h3>
+              </div>
+            </div>
+            <p class="agent-trigger"><strong>Trigger:</strong> PR review is complete and approved.</p>
+            <ul class="agent-capabilities">
+              <li>Identifies highest-risk areas that need manual testing — focuses effort where it matters most</li>
+              <li>Maps existing functionality that could regress and recommends targeted regression tests</li>
+              <li>Produces concrete, executable test scenarios: happy paths, edge cases, error conditions, integration boundaries</li>
+              <li>Compares change scope against existing automated test coverage and highlights gaps</li>
+            </ul>
+            <div class="agent-output">
+              <span class="output-label">Output</span>
+              Prioritized manual test cases for highest-risk areas, plus recommendations for new automated tests
+            </div>
+            <div class="agent-human">
+              <span class="human-label"><i data-lucide="user"></i> Human touchpoint</span>
+              QA engineers execute the test cases and apply judgment about additional exploratory testing
+            </div>
+          </div>
+
+          <!-- Documentation Maintainer -->
+          <div class="agent-card" data-phase="docs">
+            <div class="agent-header">
+              <span class="agent-icon"><i data-lucide="file-text"></i></span>
+              <div>
+                <div class="agent-phase-tag">Documentation</div>
+                <h3 class="agent-name">Documentation Maintainer</h3>
+              </div>
+            </div>
+            <p class="agent-trigger"><strong>Trigger:</strong> Changes are merged to the main branch.</p>
+            <ul class="agent-capabilities">
+              <li>Determines which documentation is affected by the merged changes</li>
+              <li>Auto-updates architecture docs, API docs, component docs, and README files</li>
+              <li>Identifies new features or components that lack documentation and drafts initial docs</li>
+            </ul>
+            <div class="agent-output">
+              <span class="output-label">Output</span>
+              Documentation PRs or updates that keep docs in sync with the codebase at all times
+            </div>
+            <div class="agent-human">
+              <span class="human-label"><i data-lucide="user"></i> Human touchpoint</span>
+              A team member reviews documentation changes for accuracy and tone
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Extended Agents ── -->
+    <section class="section section-alt" id="extended">
+      <div class="section-inner">
+        <p class="section-label">Extended Roster</p>
+        <h2 class="section-title">Growing the mesh</h2>
+        <p class="section-subtitle">The core pipeline is just the beginning. These specialized agents can be onboarded to address real-world product team concerns.</p>
+        <div class="ext-grid">
+          <div class="ext-card">
+            <span class="ext-icon"><i data-lucide="bug"></i></span>
+            <h4>Bug Fix Agent</h4>
+            <p>Analyses bug reports against recent changes, commit history, and code paths. Produces a structured root cause investigation with a suggested fix approach.</p>
+            <span class="ext-phase">Maintenance</span>
+          </div>
+          <div class="ext-card">
+            <span class="ext-icon"><i data-lucide="activity"></i></span>
+            <h4>Code Health Agent</h4>
+            <p>Identifies code smells, dead code, and duplicated logic. Tracks tech debt trends over time and proposes targeted refactoring backlog items.</p>
+            <span class="ext-phase">Maintenance</span>
+          </div>
+          <div class="ext-card">
+            <span class="ext-icon"><i data-lucide="shield"></i></span>
+            <h4>Security Review Agent</h4>
+            <p>Scans for injection risks, insecure deserialization, hardcoded secrets, and missing input validation. Checks dependency trees for known CVEs.</p>
+            <span class="ext-phase">Build &amp; Review</span>
+          </div>
+          <div class="ext-card">
+            <span class="ext-icon"><i data-lucide="zap"></i></span>
+            <h4>Performance Sentinel</h4>
+            <p>Catches N+1 queries, unbounded loops, missing pagination, and blocking I/O on hot paths before they reach production.</p>
+            <span class="ext-phase">Build &amp; Review</span>
+          </div>
+          <div class="ext-card">
+            <span class="ext-icon"><i data-lucide="rocket"></i></span>
+            <h4>Release Manager Agent</h4>
+            <p>Compiles release notes from merged PRs, verifies release readiness, flags breaking changes, and generates categorized changelogs.</p>
+            <span class="ext-phase">Release</span>
+          </div>
+          <div class="ext-card">
+            <span class="ext-icon"><i data-lucide="siren"></i></span>
+            <h4>Incident Response Agent</h4>
+            <p>Correlates incidents with recent deployments, retrieves logs and metrics, suggests mitigations, and drafts post-mortem timelines.</p>
+            <span class="ext-phase">Operations</span>
+          </div>
+          <div class="ext-card">
+            <span class="ext-icon"><i data-lucide="graduation-cap"></i></span>
+            <h4>Onboarding Agent</h4>
+            <p>Generates a personalized onboarding guide based on role, curates a reading list of key docs and ADRs, and answers codebase questions interactively.</p>
+            <span class="ext-phase">Team Growth</span>
+          </div>
+          <div class="ext-card">
+            <span class="ext-icon"><i data-lucide="plug"></i></span>
+            <h4>API Contract Agent</h4>
+            <p>Detects breaking API changes before merge, validates against OpenAPI specs, checks backward compatibility, and enforces API design standards.</p>
+            <span class="ext-phase">Build &amp; Review</span>
+          </div>
+          <div class="ext-card">
+            <span class="ext-icon"><i data-lucide="scale"></i></span>
+            <h4>Compliance &amp; Governance</h4>
+            <p>Monitors changes for PII handling, GDPR/SOC 2/HIPAA implications, and maintains an evidence trail for audits.</p>
+            <span class="ext-phase">All Phases</span>
+          </div>
+          <div class="ext-card">
+            <span class="ext-icon"><i data-lucide="refresh-cw"></i></span>
+            <h4>Migration Agent</h4>
+            <p>Analyses migration scope, generates validated migration scripts, identifies all call sites, and produces a sequenced migration plan with rollback steps.</p>
+            <span class="ext-phase">Maintenance</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Metrics ── -->
+    <section class="section section-alt" id="metrics">
+      <div class="section-inner">
+        <p class="section-label">Impact</p>
+        <h2 class="section-title">What success looks like</h2>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-icon"><i data-lucide="clock"></i></div>
+            <h4>Cycle Time</h4>
+            <p>Time from backlog item creation to production — targeting significant reduction across the board.</p>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon"><i data-lucide="target"></i></div>
+            <h4>Defect Escape Rate</h4>
+            <p>Bugs found in production vs. caught during development — targeting near-zero post-release regressions.</p>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon"><i data-lucide="trending-down"></i></div>
+            <h4>Requirements Churn</h4>
+            <p>Changes to requirements after sprint commitment — lower churn means better grooming and less rework.</p>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon"><i data-lucide="zap"></i></div>
+            <h4>Review Turnaround</h4>
+            <p>Time from PR creation to actionable feedback — targeting minutes, not hours or days.</p>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon"><i data-lucide="smile"></i></div>
+            <h4>Developer Satisfaction</h4>
+            <p>Self-reported flow state and reduced toil — because the human experience matters as much as the metrics.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Not This ── -->
+    <section class="section not-this">
+      <div class="section-inner not-this-inner">
+        <h2 class="section-title">What Xianix is <em>not</em></h2>
+        <div class="not-grid">
+          <div class="not-item">
+            <span class="not-x"><i data-lucide="x"></i></span>
+            <div>
+              <strong>Not full automation.</strong> Humans make every meaningful decision. Agents propose and verify.
+            </div>
+          </div>
+          <div class="not-item">
+            <span class="not-x"><i data-lucide="x"></i></span>
+            <div>
+              <strong>Not a replacement for skilled engineers.</strong> Agents amplify skill — they don't substitute for it. A 10x multiplier on zero is still zero.
+            </div>
+          </div>
+          <div class="not-item">
+            <span class="not-x"><i data-lucide="x"></i></span>
+            <div>
+              <strong>Not a rigid pipeline.</strong> Agents adapt to the team's workflow. Steps can be skipped, reordered, or run in parallel as the situation demands.
+            </div>
+          </div>
+          <div class="not-item">
+            <span class="not-x"><i data-lucide="x"></i></span>
+            <div>
+              <strong>Not opaque.</strong> Every agent action is visible, traceable, and auditable. The team always knows what the agents did and why.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── CTA ── -->
+    <section class="cta-section">
+      <h2>Ready to build your AI-augmented team?</h2>
+      <p>Xianix is open source and ready to deploy with Docker in minutes.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="https://github.com/99x/xianix-team" target="_blank">View on GitHub</a>
+        <a class="btn btn-outline" href="https://github.com/99x/xianix-team/tree/main/docs" target="_blank">Read the Docs</a>
+      </div>
+    </section>
+
+    <!-- ── Footer ── -->
     <footer>
       Built by <a href="https://99x.io" target="_blank">99x</a> &mdash;
       <a href="https://github.com/99x/xianix-team" target="_blank">View on GitHub</a>
     </footer>
 
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script>lucide.createIcons();</script>
   </body>
 </html>
