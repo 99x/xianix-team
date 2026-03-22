@@ -27,6 +27,36 @@ Execute all steps autonomously without pausing for user input. Do not ask for co
 
 When invoked with a PR number, branch name, or no argument (defaults to current branch vs main):
 
+### 0. Index the Codebase
+
+Before doing anything else, build a structural index of the repository so subsequent steps and sub-agents can navigate it precisely:
+
+```bash
+# Top-level layout
+ls -1
+
+# Source tree (depth 3, ignore common noise)
+find . -maxdepth 3 \
+  -not -path './.git/*' \
+  -not -path './node_modules/*' \
+  -not -path './bin/*' \
+  -not -path './obj/*' \
+  -not -path './.vs/*' \
+  | sort
+
+# Language fingerprint (file extensions present)
+find . -not -path './.git/*' -type f \
+  | sed 's/.*\.//' | sort | uniq -c | sort -rn | head -20
+
+# Entry points / build manifests
+ls *.sln *.csproj package.json go.mod Cargo.toml pom.xml build.gradle \
+   pyproject.toml setup.py requirements.txt CMakeLists.txt 2>/dev/null || true
+```
+
+Use `Read` on key config/manifest files (e.g. `package.json`, `*.csproj`, `go.mod`) to understand the project's dependencies and structure. Use `Grep` to locate important patterns such as the main entry point, base classes, or shared utilities referenced by the changed files.
+
+Store a short mental model of the project — language stack, major modules, and where the changed files fit — before proceeding.
+
 ### 1. Detect Platform
 
 Run the following to detect which hosting platform is in use:

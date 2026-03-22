@@ -19,7 +19,7 @@ fi
 : "${GITHUB_TOKEN:?GITHUB_TOKEN must be set in .env or environment}"
 
 export PLATFORM=github
-export REPO_URL="${REPO_URL:-https://github.com/XiansAiPlatform/XiansAi.Server.git}"
-export PR_NUMBER="${PR_NUMBER:-373}"
+export REPO_URL="${REPO_URL:-https://github.com/XiansAiPlatform/XiansAi.Lib.git}"
+export PR_NUMBER="${PR_NUMBER:-83}"
 
 exec "${SCRIPT_DIR}/../scripts/run-pr-review.sh" "$@"
