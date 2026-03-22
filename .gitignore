@@ -57,3 +57,4 @@ venv/
 *.cache
 [Bb]uild/
 [Oo]ut/
+.DS_Store

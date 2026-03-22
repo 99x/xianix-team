@@ -721,6 +721,139 @@ nav {
 }
 
 /* ─────────────────────────────────────────
+   Pricing
+───────────────────────────────────────── */
+.pricing-wrap {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+.pricing-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 2rem 2rem 1.75rem;
+  transition: border-color 0.2s;
+  overflow: hidden;
+}
+
+.pricing-card:hover { border-color: var(--color-primary); }
+
+.pricing-card-head {
+  text-align: left;
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pricing-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-primary);
+  margin-bottom: 1rem;
+}
+
+.pricing-amount {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 0.35rem 0.5rem;
+}
+
+.pricing-price {
+  font-size: clamp(1.85rem, 4vw, 2.35rem);
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}
+
+.pricing-period {
+  font-size: 1rem;
+  color: var(--color-muted);
+}
+
+.pricing-card-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--color-text);
+  margin-bottom: 0.5rem;
+  line-height: 1.25;
+}
+
+.pricing-card-lead {
+  font-size: 0.92rem;
+  color: var(--color-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.pricing-card .pricing-card-footer {
+  margin-top: 2rem;
+  margin-left: -2rem;
+  margin-right: -2rem;
+  margin-bottom: -1.75rem;
+  padding: 1.35rem 2rem 1.75rem;
+  border-top: 1px solid var(--color-border);
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.pricing-card .pricing-cta {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 0.75rem 1.25rem;
+}
+
+.pricing-features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pricing-features li {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  font-size: 0.92rem;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.pricing-features strong { color: var(--color-text); }
+
+.pricing-check {
+  flex-shrink: 0;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  background: var(--color-primary-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.1rem;
+}
+
+.pricing-check svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  color: var(--color-primary);
+  stroke-width: 2.5;
+}
+
+/* ─────────────────────────────────────────
    Metrics
 ───────────────────────────────────────── */
 .metrics-grid {
@@ -963,7 +1096,7 @@ footer a { color: var(--color-primary); text-decoration: none; }
   display: grid;
   grid-template-columns: 1fr 44px 1fr;
   align-items: stretch;
-  border: 2px solid var(--color-border);
+  border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -986,12 +1119,12 @@ footer a { color: var(--color-primary); text-decoration: none; }
 
 .vocab-side-old {
   background: rgba(248, 81, 73, 0.04);
-  border-right: 1px solid var(--color-border);
+  border-right: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .vocab-side-new {
   background: rgba(88, 166, 255, 0.05);
-  border-left: 1px solid var(--color-border);
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .vocab-badge {
@@ -1022,6 +1155,10 @@ footer a { color: var(--color-primary); text-decoration: none; }
   font-weight: 800;
   color: var(--color-muted);
   opacity: 0.6;
+}
+
+.vocab-term-old s {
+  text-decoration-color: #000;
 }
 
 .vocab-term-new {
@@ -1060,8 +1197,8 @@ footer a { color: var(--color-primary); text-decoration: none; }
     grid-template-rows: auto auto auto;
   }
 
-  .vocab-side-old { border-right: none; border-bottom: 1px solid var(--color-border); }
-  .vocab-side-new { border-left: none; border-top: 1px solid var(--color-border); }
+  .vocab-side-old { border-right: none; border-bottom: 1px solid rgba(255, 255, 255, 0.14); }
+  .vocab-side-new { border-left: none; border-top: 1px solid rgba(255, 255, 255, 0.14); }
 
   .vocab-divider { padding: 0.5rem; }
   .vocab-divider-arrow { transform: rotate(90deg); }
