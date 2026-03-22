@@ -66,7 +66,62 @@ readonly LOCK_TIMEOUT="${LOCK_TIMEOUT:-120}"
 
 log()  { echo "[${SCRIPT_NAME}] $*"; }
 warn() { echo "[${SCRIPT_NAME}] WARN: $*" >&2; }
-fail() { echo "[${SCRIPT_NAME}] ERROR: $*" >&2; exit 1; }
+fail() { echo "[${SCRIPT_NAME}] ERROR: $*" >&2; post_pr_error_comment "$*" 2>/dev/null || true; exit 1; }
+
+# Post a best-effort error comment on the PR when bootstrap fails.
+# Silently skips if required context variables are not yet set, or if curl fails.
+post_pr_error_comment() {
+    local _message="$1"
+    local _platform="${PLATFORM:-}"
+    local _pr="${PR_NUMBER:-}"
+    local _repo="${REPO_URL:-}"
+
+    # Skip if we don't yet have enough context to identify the PR
+    [ -n "$_platform" ] && [ -n "$_pr" ] && [ -n "$_repo" ] || return 0
+
+    local _body
+    _body=$(printf ':x: **PR review bootstrap failed (PR #%s)**\n\nThe automated review could not start due to a setup error:\n\n```\n%s\n```\n\n_Posted automatically by `run-pr-review`._' \
+        "$_pr" "$_message")
+
+    # Encode the body as a JSON string — python3 is already a hard dependency
+    local _json_body
+    _json_body=$(printf '%s' "$_body" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null) || return 0
+
+    case "$_platform" in
+        github)
+            local _token="${GITHUB_TOKEN:-}"
+            [ -n "$_token" ] || return 0
+            local _repo_path
+            _repo_path=$(printf '%s' "$_repo" | sed 's|https://github.com/||; s|\.git$||')
+            log "Posting error comment to GitHub PR #${_pr}"
+            curl -s -o /dev/null \
+                -X POST \
+                -H "Authorization: token ${_token}" \
+                -H "Content-Type: application/json" \
+                -d "{\"body\": ${_json_body}}" \
+                "https://api.github.com/repos/${_repo_path}/issues/${_pr}/comments" \
+            || warn "Failed to post error comment to GitHub PR #${_pr}"
+            ;;
+        azure-devops)
+            local _token="${AZURE_TOKEN:-}"
+            [ -n "$_token" ] || return 0
+            local _parts _org _project _repo_name _b64
+            _parts=$(printf '%s' "$_repo" | sed 's|https://dev.azure.com/||')
+            _org=$(printf '%s' "$_parts" | cut -d'/' -f1)
+            _project=$(printf '%s' "$_parts" | cut -d'/' -f2)
+            _repo_name=$(printf '%s' "$_parts" | cut -d'/' -f4)
+            _b64=$(printf ':%s' "$_token" | base64 | tr -d '\n')
+            log "Posting error comment to Azure DevOps PR #${_pr}"
+            curl -s -o /dev/null \
+                -X POST \
+                -H "Authorization: Basic ${_b64}" \
+                -H "Content-Type: application/json" \
+                -d "{\"comments\":[{\"content\":${_json_body},\"commentType\":1}],\"status\":1}" \
+                "https://dev.azure.com/${_org}/${_project}/_apis/git/repositories/${_repo_name}/pullRequests/${_pr}/threads?api-version=7.1" \
+            || warn "Failed to post error comment to Azure DevOps PR #${_pr}"
+            ;;
+    esac
+}
 
 # Retry a command up to RETRY_COUNT times with RETRY_DELAY seconds between attempts.
 retry() {
@@ -348,10 +403,14 @@ esac
 # We clone the repo directly and pass the plugin path to claude via --plugin-dir
 # so this works in any environment: CI, webhook server, or local terminal.
 
-if [ -d "${XIANIX_CACHE_DIR}/.git" ]; then
+if git -C "${XIANIX_CACHE_DIR}" rev-parse --git-dir &>/dev/null 2>&1; then
     log "Updating xianix-team plugin repo at ${XIANIX_CACHE_DIR}"
     retry git -C "${XIANIX_CACHE_DIR}" pull --ff-only --quiet
 else
+    if [ -d "${XIANIX_CACHE_DIR}" ]; then
+        log "WARN: Removing incomplete/corrupt xianix-team cache at ${XIANIX_CACHE_DIR}"
+        rm -rf "${XIANIX_CACHE_DIR}"
+    fi
     log "Cloning xianix-team plugin repo to ${XIANIX_CACHE_DIR}"
     mkdir -p "$(dirname "${XIANIX_CACHE_DIR}")"
     retry git clone --depth=1 --quiet "${XIANIX_REPO}" "${XIANIX_CACHE_DIR}"
