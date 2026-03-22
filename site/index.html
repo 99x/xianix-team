@@ -13,7 +13,7 @@
     <nav>
       <a class="nav-logo" href="#">
         <div class="logo-container">
-          <span class="logo-name">Xianix</span>
+          <span class="logo-name">Xian<span class="logo-name-accent">ix</span></span>
           <div class="by-99x-container">
             <span class="by-99x">by</span>
             <img src="img/99xlogo.svg" alt="99x Logo" class="logo-99x" />
@@ -172,37 +172,31 @@
           <p class="transform-intro">In AI-DLC the human's role shifts from heavy lifting to strategic oversight — acting as the critical <em>stop-gate</em> that keeps the AI system on course, much like a navigator who sets the destination while the AI provides step-by-step directions.</p>
 
           <div class="lf-two-col">
-            <!-- Column 1: AI -->
-            <div class="lf-column lf-column-ai">
-              <div class="lf-col-head lf-col-head-ai"><i data-lucide="bot"></i> AI proposes (Examples)</div>
-              <div class="lf-cell lf-cell-ai">
-                <span class="lf-label"><i data-lucide="clipboard-list"></i> Detailed work plan</span>
-                <p>AI systematically decomposes the Intent into a full set of tasks and sub-tasks.</p>
-              </div>
-              <div class="lf-cell lf-cell-ai">
-                <span class="lf-label"><i data-lucide="network"></i> Architectural options</span>
-                <p>AI recommends design trade-offs: Lambda vs. DynamoDB, sync vs. async, monolith vs. service.</p>
-              </div>
-              <div class="lf-cell lf-cell-ai">
-                <span class="lf-label"><i data-lucide="map"></i> Step-by-step directions</span>
-                <p>AI continuously generates implementation steps, test plans, and next actions.</p>
-              </div>
+            <div class="lf-col-head lf-col-head-ai"><i data-lucide="bot"></i> AI proposes (Examples)</div>
+            <div class="lf-col-head lf-col-head-gate"><i data-lucide="user"></i> Human decides</div>
+            <div class="lf-cell lf-cell-ai">
+              <span class="lf-label"><i data-lucide="clipboard-list"></i> Detailed work plan</span>
+              <p>AI systematically decomposes the Intent into a full set of tasks and sub-tasks.</p>
             </div>
-            <!-- Column 2: Human -->
-            <div class="lf-column lf-column-human">
-              <div class="lf-col-head lf-col-head-gate"><i data-lucide="user"></i> Human decides</div>
-              <div class="lf-gate">
-                <div class="lf-gate-chip"><i data-lucide="crosshair"></i> Provides Context</div>
-                <p>Prunes tasks that don't serve the business goal; adds domain knowledge the AI can't infer.</p>
-              </div>
-              <div class="lf-gate">
-                <div class="lf-gate-chip"><i data-lucide="lock"></i> Validates at Junctures</div>
-                <p>Approves or redirects based on organisational risk, cost, and tacit team knowledge.</p>
-              </div>
-              <div class="lf-gate">
-                <div class="lf-gate-chip"><i data-lucide="navigation"></i> Steers the Journey</div>
-                <p>Sets the destination (the Intent) and course-corrects whenever the AI drifts.</p>
-              </div>
+            <div class="lf-gate">
+              <div class="lf-gate-chip"><i data-lucide="crosshair"></i> Provides Context</div>
+              <p>Prunes tasks that don't serve the business goal; adds domain knowledge the AI can't infer.</p>
+            </div>
+            <div class="lf-cell lf-cell-ai">
+              <span class="lf-label"><i data-lucide="network"></i> Architectural options</span>
+              <p>AI recommends design trade-offs: Lambda vs. DynamoDB, sync vs. async, monolith vs. service.</p>
+            </div>
+            <div class="lf-gate">
+              <div class="lf-gate-chip"><i data-lucide="lock"></i> Validates at Junctures</div>
+              <p>Approves or redirects based on organisational risk, cost, and tacit team knowledge.</p>
+            </div>
+            <div class="lf-cell lf-cell-ai">
+              <span class="lf-label"><i data-lucide="map"></i> Step-by-step directions</span>
+              <p>AI continuously generates implementation steps, test plans, and next actions.</p>
+            </div>
+            <div class="lf-gate">
+              <div class="lf-gate-chip"><i data-lucide="navigation"></i> Steers the Journey</div>
+              <p>Sets the destination (the Intent) and course-corrects whenever the AI drifts.</p>
             </div>
           </div>
 
@@ -733,13 +727,13 @@
           <div class="not-item">
             <span class="not-x"><i data-lucide="x"></i></span>
             <div>
-              <strong>Not full automation.</strong> Humans make every meaningful decision. Agents propose and verify.
+              <strong>Not full automation.</strong> Tools are a commodity. It's the humans that make the difference. Agents propose and verify.
             </div>
           </div>
           <div class="not-item">
             <span class="not-x"><i data-lucide="x"></i></span>
             <div>
-              <strong>Not a replacement for skilled engineers.</strong> Agents amplify skill — they don't substitute for it. A 10x multiplier on zero is still zero.
+              <strong>Not a replacement for skilled engineers.</strong> Agents amplify human skill — they don't substitute for it. A 99x multiplier on zero is still zero.
             </div>
           </div>
           <div class="not-item">
