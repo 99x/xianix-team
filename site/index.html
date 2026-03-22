@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Xianix Team — AI-DLC for Software Development</title>
     <link rel="stylesheet" href="style.css" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
   </head>
   <body>
 
@@ -20,19 +21,19 @@
         </div>
       </a>
       <ul class="nav-links">
-        <li><a href="#principles">Principles</a></li>
         <li><a href="#transformation">AI-DLC</a></li>
-        <li><a href="#pipeline">Pipeline</a></li>
         <li><a href="#agents">Agents</a></li>
+        <li><a href="#extended">Roadmap</a></li>
         <li><a href="#story">Day in the Life</a></li>
-        <li><a href="https://github.com/99x/xianix-team" target="_blank">GitHub</a></li>
+        <li><a href="#metrics">Impact</a></li>
+        <li><a href="https://github.com/99x/xianix-team" target="_blank" class="nav-github"><i data-lucide="github"></i> GitHub</a></li>
       </ul>
     </nav>
 
     <!-- ── Hero ── -->
     <section class="hero">
       <span class="hero-badge">99x · AI Agent Team · from SLDC to AI-DLC</span>
-      <h1>Humans and AI agents,<br /><span>working at 99x speed</span></h1>
+      <h1>Humans and AI,<br /><span>working at 99x speed</span></h1>
       <p>
         The SDLC is becoming the <strong>AI-DLC</strong> — an AI-Driven Lifecycle where
         a coordinated mesh of agents seamlessly collaborate
@@ -67,24 +68,26 @@
            — moving away from human-driven, long-running processes toward AI-centric collaboration where 
            AI initiates tasks rather than passively assisting.</p>
 
+        <!-- Hero Diagram -->
+        <div class="hero-diagram">
+          <img src="img/aidlc.png" alt="AI-DLC Architecture Transformation" />
+        </div>
+
         <!-- Vocabulary comparison -->
         <div class="transform-block">
-          <h3 class="transform-heading">
-            <span class="transform-icon"><i data-lucide="book-open"></i></span>
-            Modernising the vocabulary and the meaning of delivery
-          </h3>
+
           <div class="vocab-cards">
 
             <div class="vocab-card">
               <div class="vocab-side vocab-side-old">
                 <span class="vocab-badge vocab-badge-old">Traditional Agile</span>
-                <span class="vocab-term-old">Sprints</span>
+                <span class="vocab-term-old"><i data-lucide="timer"></i> Sprints</span>
                 <p>Multi-week planned delivery cycles</p>
               </div>
               <div class="vocab-divider"><span class="vocab-divider-arrow">→</span></div>
               <div class="vocab-side vocab-side-new">
                 <span class="vocab-badge vocab-badge-new">AI-DLC</span>
-                <span class="vocab-term-new">Bolts</span>
+                <span class="vocab-term-new"><i data-lucide="zap"></i> Bolts</span>
                 <p>Rapid, intense cycles of continuous build-validation lasting hours or days</p>
               </div>
             </div>
@@ -92,13 +95,13 @@
             <div class="vocab-card">
               <div class="vocab-side vocab-side-old">
                 <span class="vocab-badge vocab-badge-old">Traditional Agile</span>
-                <span class="vocab-term-old">Epics</span>
+                <span class="vocab-term-old"><i data-lucide="book"></i> Epics</span>
                 <p>Large, static backlogs of pre-planned work</p>
               </div>
               <div class="vocab-divider"><span class="vocab-divider-arrow">→</span></div>
               <div class="vocab-side vocab-side-new">
                 <span class="vocab-badge vocab-badge-new">AI-DLC</span>
-                <span class="vocab-term-new">Intents</span>
+                <span class="vocab-term-new"><i data-lucide="lightbulb"></i> Intents</span>
                 <p>High-level statements of business purpose that AI decomposes into actionable tasks</p>
               </div>
             </div>
@@ -106,13 +109,13 @@
             <div class="vocab-card">
               <div class="vocab-side vocab-side-old">
                 <span class="vocab-badge vocab-badge-old">Traditional Agile</span>
-                <span class="vocab-term-old">Subdomains</span>
+                <span class="vocab-term-old"><i data-lucide="folder-open"></i> Subdomains</span>
                 <p>Conceptual groupings within a bounded context</p>
               </div>
               <div class="vocab-divider"><span class="vocab-divider-arrow">→</span></div>
               <div class="vocab-side vocab-side-new">
                 <span class="vocab-badge vocab-badge-new">AI-DLC</span>
-                <span class="vocab-term-new">Units</span>
+                <span class="vocab-term-new"><i data-lucide="package"></i> Units</span>
                 <p>Cohesive, self-contained elements designed for independent deployment and measurable value</p>
               </div>
             </div>
@@ -120,13 +123,13 @@
             <div class="vocab-card">
               <div class="vocab-side vocab-side-old">
                 <span class="vocab-badge vocab-badge-old">Traditional Agile</span>
-                <span class="vocab-term-old">Standups</span>
+                <span class="vocab-term-old"><i data-lucide="user"></i> Standups</span>
                 <p>Status update meetings for human coordination</p>
               </div>
               <div class="vocab-divider"><span class="vocab-divider-arrow">→</span></div>
               <div class="vocab-side vocab-side-new">
                 <span class="vocab-badge vocab-badge-new">AI-DLC</span>
-                <span class="vocab-term-new">Mob Elaboration</span>
+                <span class="vocab-term-new"><i data-lucide="users"></i> Mob Elaboration</span>
                 <p>Real-time rituals where the team validates AI-generated proposals live on a shared screen</p>
               </div>
             </div>
@@ -137,28 +140,48 @@
         <!-- Human as loss function -->
         <div class="transform-block">
           <h3 class="transform-heading">
-          <span class="transform-icon"><i data-lucide="compass"></i></span>
+            <span class="transform-icon"><i data-lucide="compass"></i></span>
             The human as a "Loss Function"
           </h3>
-          <p class="transform-intro">The human developer's role shifts from heavy lifting to strategic oversight — acting as the critical stop-gate that steers the AI system toward the right outcome.</p>
-          <div class="loss-grid">
-            <div class="loss-card">
-              <div class="loss-icon"><i data-lucide="map"></i></div>
-              <h4>Provides Context</h4>
-              <p>AI systematically creates detailed work plans; humans provide the contextual understanding to prune wasteful downstream efforts before they happen.</p>
+          <p class="transform-intro">In AI-DLC the human's role shifts from heavy lifting to strategic oversight — acting as the critical <em>stop-gate</em> that keeps the AI system on course, much like a navigator who sets the destination while the AI provides step-by-step directions.</p>
+
+          <div class="lf-two-col">
+            <!-- Column 1: AI -->
+            <div class="lf-column lf-column-ai">
+              <div class="lf-col-head lf-col-head-ai"><i data-lucide="bot"></i> AI proposes</div>
+              <div class="lf-cell lf-cell-ai">
+                <span class="lf-label"><i data-lucide="clipboard-list"></i> Detailed work plan</span>
+                <p>AI systematically decomposes the Intent into a full set of tasks and sub-tasks.</p>
+              </div>
+              <div class="lf-cell lf-cell-ai">
+                <span class="lf-label"><i data-lucide="network"></i> Architectural options</span>
+                <p>AI recommends design trade-offs: Lambda vs. DynamoDB, sync vs. async, monolith vs. service.</p>
+              </div>
+              <div class="lf-cell lf-cell-ai">
+                <span class="lf-label"><i data-lucide="map"></i> Step-by-step directions</span>
+                <p>AI continuously generates implementation steps, test plans, and next actions.</p>
+              </div>
             </div>
-            <div class="loss-card">
-              <div class="loss-icon"><i data-lucide="check-circle"></i></div>
-              <h4>Validates at Junctures</h4>
-              <p>Humans confirm AI decisions at critical architectural trade-offs — Lambda vs. DynamoDB, sync vs. async — ensuring safety and business alignment.</p>
-            </div>
-            <div class="loss-card">
-              <div class="loss-icon"><i data-lucide="navigation"></i></div>
-              <h4>Steers the Journey</h4>
-              <p>Like a navigator using Google Maps, the human sets the destination (the Intent) and course-corrects while AI provides step-by-step directions via task decomposition.</p>
+            <!-- Column 2: Human -->
+            <div class="lf-column lf-column-human">
+              <div class="lf-col-head lf-col-head-gate"><i data-lucide="user"></i> Human decides</div>
+              <div class="lf-gate">
+                <div class="lf-gate-chip"><i data-lucide="crosshair"></i> Provides Context</div>
+                <p>Prunes tasks that don't serve the business goal; adds domain knowledge the AI can't infer.</p>
+              </div>
+              <div class="lf-gate">
+                <div class="lf-gate-chip"><i data-lucide="lock"></i> Validates at Junctures</div>
+                <p>Approves or redirects based on organisational risk, cost, and tacit team knowledge.</p>
+              </div>
+              <div class="lf-gate">
+                <div class="lf-gate-chip"><i data-lucide="navigation"></i> Steers the Journey</div>
+                <p>Sets the destination (the Intent) and course-corrects whenever the AI drifts.</p>
+              </div>
             </div>
           </div>
+
         </div>
+
 
       </div>
     </section>
@@ -168,64 +191,189 @@
       <div class="section-inner">
         <p class="section-label">See it in action</p>
         <h2 class="section-title">A day in the life</h2>
-        <p class="section-subtitle">A feature travels from backlog to production with every agent doing its job at the right moment.</p>
-        <div class="story-timeline">
-          <div class="story-step">
-            <div class="story-dot" data-phase="backlog"></div>
-            <div class="story-content">
-              <div class="story-time">Morning</div>
-              <h4>A backlog item is created</h4>
-              <p>The product owner creates: <em>"As a user, I want to export reports as PDF."</em> Within minutes, the <strong>Requirement Analyst</strong> analyses it against the existing reporting module, identifies that the current export only supports CSV, flags questions about page layout and chart embedding, and sends those precise questions to the PO on Slack.</p>
+        <p class="section-subtitle">Watch the ping-pong between humans and AI agents as a feature travels from backlog to production.</p>
+
+        <div class="pingpong">
+
+          <!-- Lane headers -->
+          <div class="pp-headers">
+            <div class="pp-header pp-header-human">
+              <span class="pp-header-icon"><i data-lucide="user"></i></span> Human
+            </div>
+            <div class="pp-header-mid"></div>
+            <div class="pp-header pp-header-ai">
+              <span class="pp-header-icon"><i data-lucide="bot"></i></span> AI Agent
             </div>
           </div>
-          <div class="story-step">
-            <div class="story-dot" data-phase="grooming"></div>
-            <div class="story-content">
-              <div class="story-time">Mid-morning</div>
-              <h4>Requirements are groomed</h4>
-              <p>The PO answers the questions. The agent updates the item with full acceptance criteria, edge cases (empty reports, large datasets, special characters), and dependency notes (needs a PDF rendering library). The item is marked groomed and ready for sprint planning.</p>
+
+          <!-- Step 1: Human creates item -->
+          <div class="pp-row pp-from-human">
+            <div class="pp-bubble pp-bubble-human">
+              <div class="pp-time">Morning</div>
+              <div class="pp-actor">Product Owner</div>
+              <p>Creates backlog item: <em>"As a user, I want to export reports as PDF."</em></p>
+            </div>
+            <div class="pp-connector">
+              <div class="pp-line"></div>
+              <div class="pp-arrow pp-arrow-right">→</div>
+            </div>
+            <div class="pp-spacer"></div>
+          </div>
+
+          <!-- Step 2: AI analyses and asks -->
+          <div class="pp-row pp-from-ai">
+            <div class="pp-spacer"></div>
+            <div class="pp-connector">
+              <div class="pp-line"></div>
+              <div class="pp-arrow pp-arrow-left">←</div>
+            </div>
+            <div class="pp-bubble pp-bubble-ai">
+              <div class="pp-time">Minutes later</div>
+              <div class="pp-actor">Requirement Analyst</div>
+              <p>Cross-references against the existing reporting module. Identifies that CSV is the only current export format. Sends precise questions to the PO about page layout preferences and chart embedding.</p>
             </div>
           </div>
-          <div class="story-step">
-            <div class="story-dot" data-phase="design"></div>
-            <div class="story-content">
-              <div class="story-time">Sprint planning</div>
-              <h4>Technical design is produced</h4>
-              <p>The team pulls the item into the sprint. The <strong>Technical Designer</strong> produces a spec: extend the <code>IReportExporter</code> interface, add a <code>PdfReportExporter</code> implementation using the existing renderer abstraction, configure page size, and update the export endpoint. It flags that the PDF library choice should be reviewed by the tech lead.</p>
+
+          <!-- Step 3: Human answers -->
+          <div class="pp-row pp-from-human">
+            <div class="pp-bubble pp-bubble-human">
+              <div class="pp-time">Mid-morning</div>
+              <div class="pp-actor">Product Owner</div>
+              <p>Answers the questions with layout specs, chart preferences, and confirms a PDF rendering library will be needed.</p>
+            </div>
+            <div class="pp-connector">
+              <div class="pp-line"></div>
+              <div class="pp-arrow pp-arrow-right">→</div>
+            </div>
+            <div class="pp-spacer"></div>
+          </div>
+
+          <!-- Step 4: AI elaborates and closes -->
+          <div class="pp-row pp-from-ai">
+            <div class="pp-spacer"></div>
+            <div class="pp-connector">
+              <div class="pp-line"></div>
+              <div class="pp-arrow pp-arrow-left">←</div>
+            </div>
+            <div class="pp-bubble pp-bubble-ai">
+              <div class="pp-time">Mid-morning</div>
+              <div class="pp-actor">Requirement Analyst</div>
+              <p>Updates the item with full acceptance criteria, edge cases (empty reports, large datasets, special characters), and dependency notes. Marks the item as <strong>groomed</strong>.</p>
             </div>
           </div>
-          <div class="story-step">
-            <div class="story-dot" data-phase="dev"></div>
-            <div class="story-content">
-              <div class="story-time">Afternoon</div>
-              <h4>Developer builds at 10x speed</h4>
-              <p>The developer picks up the spec. With the design as context, their AI coding assistant understands exactly what to build. The developer focuses on nuanced rendering logic while AI handles the boilerplate — interface implementation, DI registration, configuration binding. They finish in a fraction of the usual time.</p>
+
+          <!-- Step 5: Human assigns to sprint -->
+          <div class="pp-row pp-from-human">
+            <div class="pp-bubble pp-bubble-human">
+              <div class="pp-time">Sprint planning</div>
+              <div class="pp-actor">Engineering Team</div>
+              <p>Pulls the groomed item into the sprint and assigns it to a developer.</p>
+            </div>
+            <div class="pp-connector">
+              <div class="pp-line"></div>
+              <div class="pp-arrow pp-arrow-right">→</div>
+            </div>
+            <div class="pp-spacer"></div>
+          </div>
+
+          <!-- Step 6: AI produces tech spec -->
+          <div class="pp-row pp-from-ai">
+            <div class="pp-spacer"></div>
+            <div class="pp-connector">
+              <div class="pp-line"></div>
+              <div class="pp-arrow pp-arrow-left">←</div>
+            </div>
+            <div class="pp-bubble pp-bubble-ai">
+              <div class="pp-time">Sprint planning</div>
+              <div class="pp-actor">Technical Designer</div>
+              <p>Produces a spec: extend <code>IReportExporter</code>, add a <code>PdfReportExporter</code> implementation, configure page size, update the export endpoint. Flags the PDF library choice for tech lead review.</p>
             </div>
           </div>
-          <div class="story-step">
-            <div class="story-dot" data-phase="review"></div>
-            <div class="story-content">
-              <div class="story-time">End of day</div>
-              <h4>PR is reviewed automatically</h4>
-              <p>The developer opens a PR. The <strong>PR Reviewer</strong> checks it against the architecture (correct layering? dependency direction?), against the requirements (all acceptance criteria addressed?), and against code standards. It posts a comment: architecture checks pass, but one acceptance criterion (special characters in report titles) isn't covered. The developer adds handling and pushes.</p>
+
+          <!-- Step 7: Human builds and opens PR -->
+          <div class="pp-row pp-from-human">
+            <div class="pp-bubble pp-bubble-human">
+              <div class="pp-time">Afternoon</div>
+              <div class="pp-actor">Developer</div>
+              <p>Picks up the spec. With the design as AI coding context, focuses on nuanced rendering logic while AI handles the boilerplate. Opens a PR in a fraction of the usual time.</p>
+            </div>
+            <div class="pp-connector">
+              <div class="pp-line"></div>
+              <div class="pp-arrow pp-arrow-right">→</div>
+            </div>
+            <div class="pp-spacer"></div>
+          </div>
+
+          <!-- Step 8: AI reviews PR -->
+          <div class="pp-row pp-from-ai">
+            <div class="pp-spacer"></div>
+            <div class="pp-connector">
+              <div class="pp-line"></div>
+              <div class="pp-arrow pp-arrow-left">←</div>
+            </div>
+            <div class="pp-bubble pp-bubble-ai">
+              <div class="pp-time">End of day</div>
+              <div class="pp-actor">PR Reviewer</div>
+              <p>Architecture checks pass. Flags one gap: the acceptance criterion for special characters in report titles isn't covered by the implementation.</p>
             </div>
           </div>
-          <div class="story-step">
-            <div class="story-dot" data-phase="test"></div>
-            <div class="story-content">
-              <div class="story-time">Next morning</div>
-              <h4>Risk-based test cases are generated</h4>
-              <p>The PR is approved. The <strong>Test Planner</strong> identifies the highest-risk areas: PDF rendering with large datasets, special character handling, and the interaction between the new exporter and the existing CSV path. The QA engineer runs the targeted tests, finds a layout issue with wide tables, and the developer fixes it.</p>
+
+          <!-- Step 9: Human fixes and pushes -->
+          <div class="pp-row pp-from-human">
+            <div class="pp-bubble pp-bubble-human">
+              <div class="pp-time">End of day</div>
+              <div class="pp-actor">Developer</div>
+              <p>Adds special character handling and pushes the fix. PR is approved.</p>
+            </div>
+            <div class="pp-connector">
+              <div class="pp-line"></div>
+              <div class="pp-arrow pp-arrow-right">→</div>
+            </div>
+            <div class="pp-spacer"></div>
+          </div>
+
+          <!-- Step 10: AI generates tests -->
+          <div class="pp-row pp-from-ai">
+            <div class="pp-spacer"></div>
+            <div class="pp-connector">
+              <div class="pp-line"></div>
+              <div class="pp-arrow pp-arrow-left">←</div>
+            </div>
+            <div class="pp-bubble pp-bubble-ai">
+              <div class="pp-time">Next morning</div>
+              <div class="pp-actor">Test Planner</div>
+              <p>Generates targeted test cases for the highest-risk areas: large dataset rendering, special character handling, and the new exporter interacting with the existing CSV path.</p>
             </div>
           </div>
-          <div class="story-step">
-            <div class="story-dot" data-phase="docs"></div>
-            <div class="story-content">
-              <div class="story-time">Merge</div>
-              <h4>Docs are kept in sync automatically</h4>
-              <p>The code is merged. The <strong>Doc Maintainer</strong> updates the API documentation with the new export endpoint and adds a section to the component docs about the PDF exporter. Docs are never stale again.</p>
+
+          <!-- Step 11: Human tests, finds issue -->
+          <div class="pp-row pp-from-human">
+            <div class="pp-bubble pp-bubble-human">
+              <div class="pp-time">Next morning</div>
+              <div class="pp-actor">QA Engineer</div>
+              <p>Runs the targeted tests. Finds a layout issue with wide tables and logs it for the developer to fix.</p>
+            </div>
+            <div class="pp-connector">
+              <div class="pp-line"></div>
+              <div class="pp-arrow pp-arrow-right">→</div>
+            </div>
+            <div class="pp-spacer"></div>
+          </div>
+
+          <!-- Step 12: Human merges, AI docs -->
+          <div class="pp-row pp-from-ai">
+            <div class="pp-spacer"></div>
+            <div class="pp-connector">
+              <div class="pp-line"></div>
+              <div class="pp-arrow pp-arrow-left">←</div>
+            </div>
+            <div class="pp-bubble pp-bubble-ai">
+              <div class="pp-time">Merge</div>
+              <div class="pp-actor">Doc Maintainer</div>
+              <p>Code is merged. Updates the API docs with the new export endpoint and adds a component doc section for the PDF exporter. Docs are never stale again.</p>
             </div>
           </div>
+
         </div>
       </div>
     </section>
@@ -236,7 +384,7 @@
       <div class="section-inner">
         <p class="section-label">Core Pipeline</p>
         <h2 class="section-title">The agent team</h2>
-        <p class="section-subtitle">Six specialized agents cover every phase of the SDLC, each with a clear trigger, well-defined output, and a human touchpoint.</p>
+        <p class="section-subtitle">Five specialized agents cover every phase of the SDLC, each with a clear trigger, well-defined output, and a human touchpoint.</p>
 
         <div class="agent-grid">
 
@@ -264,32 +412,6 @@
             <div class="agent-human">
               <span class="human-label"><i data-lucide="user"></i> Human touchpoint</span>
               Product owner reviews the elaborated item and decides when it's ready for sprint planning
-            </div>
-          </div>
-
-          <!-- Sprint Planning -->
-          <div class="agent-card" data-phase="planning">
-            <div class="agent-header">
-              <span class="agent-icon"><i data-lucide="calendar-days"></i></span>
-              <div>
-                <div class="agent-phase-tag">Sprint Planning</div>
-                <h3 class="agent-name">Sprint Planning Agent</h3>
-              </div>
-            </div>
-            <p class="agent-trigger"><strong>Trigger:</strong> A groomed backlog item is moved into a sprint by a human.</p>
-            <ul class="agent-capabilities">
-              <li>Analyses team velocity, current sprint load, and individual availability</li>
-              <li>Maps dependencies between sprint items and flags sequencing constraints</li>
-              <li>Highlights items with high complexity, cross-cutting concerns, or external blockers</li>
-              <li>Recommends sprint composition adjustments when overloaded or misaligned</li>
-            </ul>
-            <div class="agent-output">
-              <span class="output-label">Output</span>
-              Sprint risk report, dependency graph, and capacity recommendations
-            </div>
-            <div class="agent-human">
-              <span class="human-label"><i data-lucide="user"></i> Human touchpoint</span>
-              The team makes final sprint commitment decisions — the agent informs, the team decides
             </div>
           </div>
 
@@ -404,10 +526,16 @@
     <!-- ── Extended Agents ── -->
     <section class="section section-alt" id="extended">
       <div class="section-inner">
-        <p class="section-label">Extended Roster</p>
+        <p class="section-label">Future Agents Roadmap</p>
         <h2 class="section-title">Growing the mesh</h2>
         <p class="section-subtitle">The core pipeline is just the beginning. These specialized agents can be onboarded to address real-world product team concerns.</p>
         <div class="ext-grid">
+          <div class="ext-card">
+            <span class="ext-icon"><i data-lucide="calendar-days"></i></span>
+            <h4>Sprint Planning Agent</h4>
+            <p>When a groomed backlog item is moved into a sprint, analyses velocity, sprint load, and availability; maps dependencies and sequencing constraints; highlights complexity and blockers; recommends composition adjustments. Output: sprint risk report, dependency graph, and capacity recommendations — the team commits; the agent informs.</p>
+            <span class="ext-phase">Sprint Planning</span>
+          </div>
           <div class="ext-card">
             <span class="ext-icon"><i data-lucide="bug"></i></span>
             <h4>Bug Fix Agent</h4>
@@ -480,8 +608,8 @@
         <div class="metrics-grid">
           <div class="metric-card">
             <div class="metric-icon"><i data-lucide="clock"></i></div>
-            <h4>Cycle Time</h4>
-            <p>Time from backlog item creation to production — targeting significant reduction across the board.</p>
+            <h4>Cycle Time &amp; Review Speed</h4>
+            <p>End-to-end time from backlog to production, including fast PR feedback — targeting significant reduction so reviews land in minutes, not hours or days.</p>
           </div>
           <div class="metric-card">
             <div class="metric-icon"><i data-lucide="target"></i></div>
@@ -492,11 +620,6 @@
             <div class="metric-icon"><i data-lucide="trending-down"></i></div>
             <h4>Requirements Churn</h4>
             <p>Changes to requirements after sprint commitment — lower churn means better grooming and less rework.</p>
-          </div>
-          <div class="metric-card">
-            <div class="metric-icon"><i data-lucide="zap"></i></div>
-            <h4>Review Turnaround</h4>
-            <p>Time from PR creation to actionable feedback — targeting minutes, not hours or days.</p>
           </div>
           <div class="metric-card">
             <div class="metric-icon"><i data-lucide="smile"></i></div>
