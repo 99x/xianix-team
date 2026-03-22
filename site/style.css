@@ -963,13 +963,19 @@ footer a { color: var(--color-primary); text-decoration: none; }
   display: grid;
   grid-template-columns: 1fr 44px 1fr;
   align-items: stretch;
-  border: 1px solid var(--color-border);
+  border: 2px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: border-color 0.2s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: border-color 0.2s, transform 0.15s, box-shadow 0.15s;
+  text-decoration: none;
 }
 
-.vocab-card:hover { border-color: var(--color-primary); }
+.vocab-card:hover { 
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
 
 .vocab-side {
   display: flex;
@@ -1012,23 +1018,23 @@ footer a { color: var(--color-primary); text-decoration: none; }
 }
 
 .vocab-term-old {
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: 1.4rem;
+  font-weight: 800;
   color: var(--color-muted);
   opacity: 0.6;
 }
 
 .vocab-term-new {
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: 1.4rem;
+  font-weight: 800;
   color: var(--color-primary);
 }
 
 .vocab-side p {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--color-muted);
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .vocab-divider {
