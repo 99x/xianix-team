@@ -53,6 +53,12 @@ public static class PrReviewAgent
             "Webhook received: [{Platform}] repo={RepoUrl} pr=#{PrNumber}",
             prContext.PlatformName, prContext.RepoUrl, prContext.PrNumber);
 
+        if (string.IsNullOrWhiteSpace(tenant))
+        {
+            logger.LogWarning("PR webhook missing TenantId; cannot start PR review workflow.");
+            return;
+        }
+
         var sourceRef = !string.IsNullOrEmpty(prContext.SourceBranch)
             ? $"refs/heads/{prContext.SourceBranch}"
             : null;
@@ -61,18 +67,28 @@ public static class PrReviewAgent
             prContext.PlatformName,
             prContext.RepoUrl,
             prContext.PrNumber,
-            SourceRef: sourceRef,
-            TenantId: tenant);
+            tenant,
+            SourceRef: sourceRef);
 
-        // Deterministic workflow ID prevents duplicate reviews if the same webhook is delivered more than once.
-        // Include tenant for isolation when multiple tenants share the same process.
-        var workflowId = string.IsNullOrEmpty(tenant)
-            ? $"pr-review-{prContext.PlatformName}-{SanitizeForId(prContext.RepoUrl)}-{prContext.PrNumber}"
-            : $"pr-review-{SanitizeForId(tenant)}-{prContext.PlatformName}-{SanitizeForId(prContext.RepoUrl)}-{prContext.PrNumber}";
+        await StartReviewAsync(input, logger);
+    }
 
-        logger.LogDebug("Starting workflow {WorkflowId}", workflowId);
+    /// <summary>
+    /// Starts the PR review script workflow from a <see cref="PrReviewScriptInput"/> (no webhook payload).
+    /// </summary>
+    public static async Task StartReviewAsync(PrReviewScriptInput input, ILogger? logger = null)
+    {
+        var workflowId = BuildWorkflowId(input);
+        logger?.LogDebug("Starting workflow {WorkflowId}", workflowId);
         await XiansContext.Workflows.StartAsync<PrReviewScriptWorkflow>(args: new[] { input }, workflowId);
     }
+
+    /// <summary>
+    /// Deterministic workflow ID prevents duplicate reviews if the same webhook is delivered more than once.
+    /// Include tenant for isolation when multiple tenants share the same process.
+    /// </summary>
+    private static string BuildWorkflowId(PrReviewScriptInput input) =>
+        $"pr-review-{SanitizeForId(input.TenantId)}-{input.PlatformName}-{SanitizeForId(input.RepoUrl)}-{input.PrNumber}";
 
     private static string NormalizePayload(string raw)
     {

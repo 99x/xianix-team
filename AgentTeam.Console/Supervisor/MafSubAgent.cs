@@ -27,10 +27,20 @@ public sealed class MafSubAgent
         var text = xiansContext.Message.Text
             ?? throw new InvalidOperationException("UserMessageContext.Message.Text is required.");
 
+        var tools = new MafSubAgentTools(xiansContext);
+
         var agent = _openAi.GetChatClient(_modelName).AsAIAgent(new ChatClientAgentOptions
         {
             Name = "MafSubAgent",
-            ChatOptions = new ChatOptions { Instructions = "You are a friendly assistant. Keep your answers brief." },
+            ChatOptions = new ChatOptions
+            {
+                Instructions = "You are a friendly assistant. Keep your answers brief.",
+                Tools =
+                [
+                    AIFunctionFactory.Create(tools.GetCurrentDateTime),
+                    AIFunctionFactory.Create(tools.StartPrReviewWorkflow)
+                ]
+            },
             AIContextProviders = [new ChatHistoryProvider(xiansContext)]
         });
 

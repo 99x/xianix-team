@@ -9,6 +9,6 @@ public sealed record PrReviewScriptInput(
     string PlatformName,
     string RepoUrl,
     int PrNumber,
-    string? SourceRef = null,
-    string? TenantId = null
+    string TenantId,
+    string? SourceRef = null
 );

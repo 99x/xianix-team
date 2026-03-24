@@ -20,11 +20,5 @@ public sealed class PrWebhookContext
     /// <summary>
     /// Returns the platform name as used in run-pr-review (e.g., "github", "azure-devops").
     /// </summary>
-    public string PlatformName =>
-        Platform switch
-        {
-            GitProvider.GitHub => "github",
-            GitProvider.AzureDevOps => "azure-devops",
-            _ => Platform.ToString().ToLowerInvariant(),
-        };
+    public string PlatformName => Platform.ToWorkflowPlatformName();
 }

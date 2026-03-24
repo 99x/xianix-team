@@ -8,7 +8,7 @@ namespace AgentTeam.Console.Workflows;
 /// Per-issue workflow that runs run-requirement-analysis.sh for a single backlog item.
 /// Started by the integrator on each webhook; receives issue context and executes the script via activity.
 /// </summary>
-[Workflow("Requirement Analysis Agent:Requirement Analysis Workflow")]
+[Workflow("Xianix Agent Team:Requirement Analysis Workflow")]
 public class RequirementAnalysisWorkflow
 {
     /// <summary>

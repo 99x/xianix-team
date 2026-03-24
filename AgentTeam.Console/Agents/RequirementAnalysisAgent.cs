@@ -4,7 +4,6 @@ using AgentTeam.Console.Webhooks.Parsers;
 using AgentTeam.Console.Workflows;
 using Microsoft.Extensions.Logging;
 using Xians.Lib.Agents.Core;
-using Xians.Lib.Agents.Workflows.Models;
 
 namespace AgentTeam.Console.Agents;
 
@@ -56,7 +55,57 @@ public static class RequirementAnalysisAgent
             issueContext.RepoUrl,
             issueContext.IssueNumber);
 
-        await XiansContext.Workflows.StartAsync<RequirementAnalysisWorkflow>(args: new[] { input }, Guid.NewGuid().ToString());
+        await StartAnalysisAsync(input, logger);
+    }
+
+    /// <summary>
+    /// Starts the requirement analysis workflow with explicit parameters (no webhook payload).
+    /// Use when invoking from code, CLI, or tests instead of <see cref="HandleWebhookAsync"/>.
+    /// </summary>
+    /// <param name="platformName">Source control platform (e.g. GitHub).</param>
+    /// <param name="repoUrl">Repository URL for the issue.</param>
+    /// <param name="issueNumber">Issue number.</param>
+    /// <param name="logger">Optional logger; workflow start is logged at Debug when provided.</param>
+    public static Task StartAnalysisAsync(
+        string platformName,
+        string repoUrl,
+        int issueNumber,
+        ILogger? logger = null)
+    {
+        var input = new RequirementAnalysisInput(platformName, repoUrl, issueNumber);
+        return StartAnalysisAsync(input, logger);
+    }
+
+    /// <summary>
+    /// Starts the requirement analysis workflow from a <see cref="RequirementAnalysisInput"/> (no webhook payload).
+    /// </summary>
+    public static async Task StartAnalysisAsync(RequirementAnalysisInput input, ILogger? logger = null)
+    {
+        var workflowId = BuildWorkflowId(input);
+        logger?.LogDebug("Starting workflow {WorkflowId}", workflowId);
+        await XiansContext.Workflows.StartAsync<RequirementAnalysisWorkflow>(args: new[] { input }, workflowId);
+    }
+
+    private static string BuildWorkflowId(RequirementAnalysisInput input)
+    {
+        return $"req-analysis-{input.PlatformName}-{SanitizeForId(input.RepoUrl)}-{input.IssueNumber}";
+    }
+
+    private static string SanitizeForId(string value)
+    {
+        // Keep only alphanumeric, hyphens, dots, underscores — safe for Temporal workflow IDs
+        var span = value.AsSpan();
+        var chars = new char[span.Length];
+        var len = 0;
+        foreach (var c in span)
+        {
+            if (char.IsLetterOrDigit(c) || c == '-' || c == '.' || c == '_')
+                chars[len++] = c;
+            else if (c == '/' || c == ':')
+                chars[len++] = '-';
+        }
+        var sanitized = new string(chars, 0, len).Trim('-');
+        return sanitized.Length > 200 ? sanitized[^200..] : sanitized;
     }
 
     private static string NormalizePayload(string raw)

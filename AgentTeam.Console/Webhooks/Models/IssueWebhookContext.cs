@@ -18,11 +18,5 @@ public sealed class IssueWebhookContext
     /// <summary>
     /// Returns the platform name as used in run-requirement-analysis (e.g., "github", "azure-devops").
     /// </summary>
-    public string PlatformName =>
-        Platform switch
-        {
-            GitProvider.GitHub => "github",
-            GitProvider.AzureDevOps => "azure-devops",
-            _ => Platform.ToString().ToLowerInvariant(),
-        };
+    public string PlatformName => Platform.ToWorkflowPlatformName();
 }
