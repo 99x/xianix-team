@@ -258,6 +258,16 @@ nav {
   margin-bottom: 3rem;
 }
 
+.section-subtitle a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.section-subtitle a:hover {
+  color: var(--color-text);
+}
+
 .hero-diagram {
   margin: 0 auto 4rem;
   max-width: 1000px;

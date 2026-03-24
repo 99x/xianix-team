@@ -2,8 +2,10 @@ using AgentTeam.Console.Agents;
 using DotNetEnv;
 using Microsoft.Extensions.Logging;
 using Xians.Lib.Agents.Core;
+using Xians.Lib.Agents.Messaging;
 using Xians.Lib.Agents.Workflows.Models;
 using AgentTeam.Console.Workflows;
+using AgentTeam.Console.Supervisor;
 
 // Load .env from project dir (works regardless of cwd when running)
 var envPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".env"));
@@ -16,6 +18,8 @@ var serverUrl = Environment.GetEnvironmentVariable("XIANS_SERVER_URL")
     ?? throw new InvalidOperationException("XIANS_SERVER_URL not found in environment variables");
 var xiansApiKey = Environment.GetEnvironmentVariable("XIANS_API_KEY")
     ?? throw new InvalidOperationException("XIANS_API_KEY not found in environment variables");
+var openAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY")
+    ?? throw new InvalidOperationException("OPENAI_API_KEY not found in environment variables");
 
 using var cts = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) =>
@@ -68,6 +72,15 @@ integratorWorkflow.OnWebhook(async (context) =>
         await RequirementAnalysisAgent.HandleWebhookAsync(context, agentLogger);
         return;
     }
+});
+
+var supervisor = new MafSubAgent(openAiApiKey);
+
+var conversationalWorkflow = xianixAgent.Workflows.DefineSupervisor();
+conversationalWorkflow.OnUserChatMessage(async (message) =>
+{
+    var reply = await supervisor.RunAsync(message, cts.Token).ConfigureAwait(false);
+    await message.ReplyAsync(reply).ConfigureAwait(false);
 });
 
 Console.WriteLine("Agents registered. Listening for webhooks (pr-reviewer, req-analyst)...");
