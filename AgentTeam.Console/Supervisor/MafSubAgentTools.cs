@@ -49,4 +49,28 @@ public sealed class MafSubAgentTools
         await _context.ReplyAsync(msg).ConfigureAwait(false);
         return msg;
     }
+
+    [Description(
+        "Starts the automated requirement analysis workflow for a repository and issue number. Use when the user asks to analyze requirements for an issue, run the requirement analyzer, or start requirement analysis for a given repo.")]
+    public async Task<string> StartRequirementAnalysisWorkflow(
+        [Description("Source control platform: GitHub or AzureDevOps.")]
+        GitProvider platform,
+        [Description("Repository URL (HTTPS clone URL).")]
+        string repoUrl,
+        [Description("Issue number.")]
+        int issueNumber)
+    {
+        var tenantId = _context.Message.TenantId?.Trim();
+        if (string.IsNullOrEmpty(tenantId))
+            throw new InvalidOperationException("TenantId is required to start the requirement analysis workflow.");
+
+        var platformName = platform.ToWorkflowPlatformName();
+        var input = new RequirementAnalysisInput(platformName, repoUrl, issueNumber);
+
+        await RequirementAnalysisAgent.StartAnalysisAsync(input).ConfigureAwait(false);
+
+        var msg = $"Started requirement analysis workflow for {repoUrl} issue #{issueNumber} ({platformName}).";
+        await _context.ReplyAsync(msg).ConfigureAwait(false);
+        return msg;
+    }
 }

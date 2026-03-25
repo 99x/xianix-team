@@ -490,15 +490,29 @@ nav {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: 1.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
   transition: border-color 0.2s, transform 0.15s;
 }
 
 .agent-card:hover {
   border-color: var(--color-primary);
   transform: translateY(-2px);
+}
+
+.agent-card[open] {
+  border-color: var(--color-primary);
+  grid-column: 1 / -1;
+}
+
+.agent-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.agent-summary::-webkit-details-marker {
+  display: none;
 }
 
 .agent-header {
@@ -531,6 +545,71 @@ nav {
 }
 
 .agent-trigger strong { color: var(--color-text); }
+
+.agent-preview {
+  font-size: 0.9rem;
+  color: var(--color-text);
+  line-height: 1.55;
+}
+
+.agent-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: rgb(var(--color-primary-rgb) / 0.08);
+}
+
+.agent-toggle::after {
+  content: '↓';
+  font-size: 0.75rem;
+}
+
+.agent-card[open] .agent-toggle::after {
+  content: '↑';
+}
+
+.agent-card[open] .agent-toggle {
+  color: var(--color-text);
+  border-color: rgb(var(--color-primary-rgb) / 0.35);
+}
+
+.agent-card[open] .agent-toggle::before {
+  content: 'Hide details';
+}
+
+.agent-card[open] .agent-toggle {
+  font-size: 0;
+}
+
+.agent-card[open] .agent-toggle::after,
+.agent-card[open] .agent-toggle::before {
+  font-size: 0.78rem;
+}
+
+.agent-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgb(var(--color-primary-rgb) / 0.16);
+}
+
+.agent-trigger-box {
+  background: rgb(var(--color-text-rgb) / 0.03);
+  border-color: rgb(var(--color-text-rgb) / 0.12);
+}
+
+.agent-trigger-box .output-label {
+  color: var(--color-text);
+}
 
 .agent-capabilities {
   list-style: none;

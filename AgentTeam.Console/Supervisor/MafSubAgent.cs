@@ -38,7 +38,8 @@ public sealed class MafSubAgent
                 Tools =
                 [
                     AIFunctionFactory.Create(tools.GetCurrentDateTime),
-                    AIFunctionFactory.Create(tools.StartPrReviewWorkflow)
+                    AIFunctionFactory.Create(tools.StartPrReviewWorkflow),
+                    AIFunctionFactory.Create(tools.StartRequirementAnalysisWorkflow)
                 ]
             },
             AIContextProviders = [new ChatHistoryProvider(xiansContext)]
