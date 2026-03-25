@@ -268,6 +268,61 @@ nav {
   color: var(--color-text);
 }
 
+.agent-flow-intro,
+.agent-flow-note {
+  color: var(--color-muted);
+  font-size: 0.95rem;
+  max-width: 860px;
+}
+
+.agent-flow-intro {
+  margin: -1.5rem 0 1rem;
+}
+
+.agent-flow-note {
+  margin: 1rem 0 2rem;
+}
+
+.handoff-flow {
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.handoff-step {
+  min-width: 150px;
+  flex: 1 1 150px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.handoff-role {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.handoff-artifact {
+  font-size: 0.8rem;
+  color: var(--color-primary);
+}
+
+.handoff-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted);
+  font-size: 1.1rem;
+  font-weight: 700;
+  min-width: 20px;
+}
+
 .hero-diagram {
   margin: 0 auto 4rem;
   max-width: 1000px;
@@ -1076,6 +1131,7 @@ footer a { color: var(--color-primary); text-decoration: none; }
   .section-title { margin-bottom: 1.25rem; }
 
   .agent-grid { grid-template-columns: 1fr; }
+  .handoff-arrow { display: none; }
   .redesign-grid { gap: 1.5rem; }
   .transform-block { margin-bottom: 2.5rem; }
 }
