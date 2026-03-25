@@ -1,7 +1,7 @@
-namespace AgentTeam.Console.Webhooks.Models;
+namespace AgentTeam.Console.Platforms;
 
 /// <summary>
-/// Identifies the source control provider for webhook events.
+/// Identifies the source control provider for supervisor tools and workflows.
 /// </summary>
 public enum GitProvider
 {

@@ -2,7 +2,6 @@ using AgentTeam.Console.Agents;
 using DotNetEnv;
 using Microsoft.Extensions.Logging;
 using Xians.Lib.Agents.Core;
-using Xians.Lib.Agents.Messaging;
 using Xians.Lib.Agents.Workflows.Models;
 using AgentTeam.Console.Workflows;
 using AgentTeam.Console.Supervisor;
@@ -38,13 +37,13 @@ var xiansPlatform = await XiansPlatform.InitializeAsync(new()
     ConsoleLogLevel = LogLevel.Debug
 });
 
-// Agent registration and webhook listener (dispatches by webhook name: pr-reviewer, req-analyst)
+// Agent registration and webhook listener (each agent skips unless agents.json rules match)
 using var agentLoggerFactory = LoggerFactory.Create(b => b.AddConsole().SetMinimumLevel(LogLevel.Debug));
 var agentLogger = agentLoggerFactory.CreateLogger("XianixAgent");
 
 var xianixAgent = xiansPlatform.Agents.Register(new()
 {
-    Name = "Xianix Agent Team",
+    Name = "Xianix Agents v0.1",
     Category = "AI-DLC",
     Summary = "A coordinated mesh of AI agents across the full software development lifecycle.",
     Description = "A coordinated mesh of AI agents across the full software development lifecycle.",
@@ -61,17 +60,8 @@ xianixAgent.Workflows.DefineCustom<RequirementAnalysisWorkflow>(new WorkflowOpti
 var integratorWorkflow = xianixAgent.Workflows.DefineIntegrator();
 integratorWorkflow.OnWebhook(async (context) =>
 {
-    var webhookName = (string?)context.Webhook.Name;
-    if (webhookName?.StartsWith("pr-reviewer", StringComparison.OrdinalIgnoreCase) == true)
-    {
-        await PrReviewAgent.HandleWebhookAsync(context, agentLogger);
-        return;
-    }
-    if (webhookName?.StartsWith("req-analyst", StringComparison.OrdinalIgnoreCase) == true)
-    {
-        await RequirementAnalysisAgent.HandleWebhookAsync(context, agentLogger);
-        return;
-    }
+    await PrReviewerAgent.HandleWebhookAsync(context, agentLogger, openAiApiKey);
+    await ReqAnalystAgent.HandleWebhookAsync(context, agentLogger, openAiApiKey);
 });
 
 var supervisor = new MafSubAgent(openAiApiKey);
@@ -83,6 +73,6 @@ conversationalWorkflow.OnUserChatMessage(async (message) =>
     await message.ReplyAsync(reply).ConfigureAwait(false);
 });
 
-Console.WriteLine("Agents registered. Listening for webhooks (pr-reviewer, req-analyst)...");
+Console.WriteLine("Agents registered. Listening for webhooks (PR + requirement analysis)...");
 
 await xianixAgent.RunAllAsync();

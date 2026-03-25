@@ -1,6 +1,6 @@
 using System.ComponentModel;
 using AgentTeam.Console.Agents;
-using AgentTeam.Console.Webhooks.Models;
+using AgentTeam.Console.Platforms;
 using AgentTeam.Console.Workflows;
 using Xians.Lib.Agents.Messaging;
 
@@ -43,7 +43,7 @@ public sealed class MafSubAgentTools
         var platformName = platform.ToWorkflowPlatformName();
         var input = new PrReviewScriptInput(platformName, repoUrl, prNumber, tenantId);
 
-        await PrReviewAgent.StartReviewAsync(input).ConfigureAwait(false);
+        await PrReviewerAgent.StartReviewAsync(input).ConfigureAwait(false);
 
         var msg = $"Started PR review workflow for {repoUrl} PR #{prNumber} ({platformName}).";
         await _context.ReplyAsync(msg).ConfigureAwait(false);
@@ -65,9 +65,9 @@ public sealed class MafSubAgentTools
             throw new InvalidOperationException("TenantId is required to start the requirement analysis workflow.");
 
         var platformName = platform.ToWorkflowPlatformName();
-        var input = new RequirementAnalysisInput(platformName, repoUrl, issueNumber);
+        var input = new RequirementAnalysisInput(platformName, repoUrl, issueNumber, tenantId);
 
-        await RequirementAnalysisAgent.StartAnalysisAsync(input).ConfigureAwait(false);
+        await ReqAnalystAgent.StartAnalysisAsync(input).ConfigureAwait(false);
 
         var msg = $"Started requirement analysis workflow for {repoUrl} issue #{issueNumber} ({platformName}).";
         await _context.ReplyAsync(msg).ConfigureAwait(false);

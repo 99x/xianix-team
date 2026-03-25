@@ -47,6 +47,9 @@
 #   GIT_RETRY_COUNT   Number of retries for network operations (default: 3)
 #   GIT_RETRY_DELAY   Seconds between retries (default: 5)
 #   LOCK_TIMEOUT      Seconds to wait for cache lock before aborting (default: 120)
+#   PR_REVIEW_SKIP_PR_COMMENTS  Set to "1" to skip GitHub / Azure DevOps PR comments (local dev)
+#   PR_REVIEW_XIANIX_LOCK_DIR   Directory used for flock around the shared xianix-team plugin clone
+#                               (default: <parent of XIANIX_CACHE_DIR>/.xianix-plugin-lock)
 
 set -euo pipefail
 
@@ -66,61 +69,93 @@ readonly LOCK_TIMEOUT="${LOCK_TIMEOUT:-120}"
 
 log()  { echo "[${SCRIPT_NAME}] $*"; }
 warn() { echo "[${SCRIPT_NAME}] WARN: $*" >&2; }
-fail() { echo "[${SCRIPT_NAME}] ERROR: $*" >&2; post_pr_error_comment "$*" 2>/dev/null || true; exit 1; }
 
-# Post a best-effort error comment on the PR when bootstrap fails.
-# Silently skips if required context variables are not yet set, or if curl fails.
-post_pr_error_comment() {
-    local _message="$1"
-    local _platform="${PLATFORM:-}"
-    local _pr="${PR_NUMBER:-}"
-    local _repo="${REPO_URL:-}"
+# Set by fail() so the EXIT trap can post the same message to the PR.
+LAST_ERROR_MESSAGE=""
 
-    # Skip if we don't yet have enough context to identify the PR
-    [ -n "$_platform" ] && [ -n "$_pr" ] && [ -n "$_repo" ] || return 0
+fail() {
+    echo "[${SCRIPT_NAME}] ERROR: $*" >&2
+    LAST_ERROR_MESSAGE="$*"
+    exit 1
+}
 
-    local _body
-    _body=$(printf ':x: **PR review bootstrap failed (PR #%s)**\n\nThe automated review could not start due to a setup error:\n\n```\n%s\n```\n\n_Posted automatically by `run-pr-review`._' \
-        "$_pr" "$_message")
+# Encode arbitrary text as a JSON string (for API bodies).
+json_encode() {
+    printf '%s' "$1" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null
+}
 
-    # Encode the body as a JSON string — python3 is already a hard dependency
+# Best-effort comment on the PR. Skips when env is incomplete or PR_REVIEW_SKIP_PR_COMMENTS=1.
+post_pr_markdown_comment() {
+    local _body="$1"
+    [ "${PR_REVIEW_SKIP_PR_COMMENTS:-0}" != "1" ] || { log "Skipping PR comment (PR_REVIEW_SKIP_PR_COMMENTS=1)"; return 0; }
+    [ -n "${PLATFORM:-}" ] && [ -n "${PR_NUMBER:-}" ] && [ -n "${REPO_URL:-}" ] || return 0
+
     local _json_body
-    _json_body=$(printf '%s' "$_body" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null) || return 0
+    _json_body=$(json_encode "$_body") || return 0
 
-    case "$_platform" in
+    case "$PLATFORM" in
         github)
-            local _token="${GITHUB_TOKEN:-}"
-            [ -n "$_token" ] || return 0
+            [ -n "${GITHUB_TOKEN:-}" ] || return 0
             local _repo_path
-            _repo_path=$(printf '%s' "$_repo" | sed 's|https://github.com/||; s|\.git$||')
-            log "Posting error comment to GitHub PR #${_pr}"
+            _repo_path=$(printf '%s' "$REPO_URL" | sed 's|https://github.com/||; s|\.git$||')
+            log "Posting comment to GitHub PR #${PR_NUMBER}"
             curl -s -o /dev/null \
                 -X POST \
-                -H "Authorization: token ${_token}" \
+                -H "Authorization: token ${GITHUB_TOKEN}" \
                 -H "Content-Type: application/json" \
+                -H "Accept: application/vnd.github+json" \
                 -d "{\"body\": ${_json_body}}" \
-                "https://api.github.com/repos/${_repo_path}/issues/${_pr}/comments" \
-            || warn "Failed to post error comment to GitHub PR #${_pr}"
+                "https://api.github.com/repos/${_repo_path}/issues/${PR_NUMBER}/comments" \
+                || warn "Failed to post comment to GitHub PR #${PR_NUMBER}"
             ;;
         azure-devops)
-            local _token="${AZURE_TOKEN:-}"
-            [ -n "$_token" ] || return 0
+            [ -n "${AZURE_TOKEN:-}" ] || return 0
             local _parts _org _project _repo_name _b64
-            _parts=$(printf '%s' "$_repo" | sed 's|https://dev.azure.com/||')
+            _parts=$(printf '%s' "$REPO_URL" | sed 's|https://dev.azure.com/||')
             _org=$(printf '%s' "$_parts" | cut -d'/' -f1)
             _project=$(printf '%s' "$_parts" | cut -d'/' -f2)
             _repo_name=$(printf '%s' "$_parts" | cut -d'/' -f4)
-            _b64=$(printf ':%s' "$_token" | base64 | tr -d '\n')
-            log "Posting error comment to Azure DevOps PR #${_pr}"
+            _b64=$(printf ':%s' "$AZURE_TOKEN" | base64 | tr -d '\n')
+            log "Posting comment to Azure DevOps PR #${PR_NUMBER}"
             curl -s -o /dev/null \
                 -X POST \
                 -H "Authorization: Basic ${_b64}" \
                 -H "Content-Type: application/json" \
                 -d "{\"comments\":[{\"content\":${_json_body},\"commentType\":1}],\"status\":1}" \
-                "https://dev.azure.com/${_org}/${_project}/_apis/git/repositories/${_repo_name}/pullRequests/${_pr}/threads?api-version=7.1" \
-            || warn "Failed to post error comment to Azure DevOps PR #${_pr}"
+                "https://dev.azure.com/${_org}/${_project}/_apis/git/repositories/${_repo_name}/pullRequests/${PR_NUMBER}/threads?api-version=7.1" \
+                || warn "Failed to post comment to Azure DevOps PR #${PR_NUMBER}"
             ;;
     esac
+}
+
+post_pr_start_comment() {
+    local _msg
+    _msg=$(printf '%s\n\n%s\n\n%s' \
+        ':hourglass: **PR review started**' \
+        'Automated PR review is running for this pull request.' \
+        "_Posted automatically by \`${SCRIPT_NAME}\`._")
+    post_pr_markdown_comment "$_msg"
+}
+
+# Called from cleanup EXIT trap on non-zero exit. Optional explicit message from fail(); otherwise generic.
+post_pr_failure_comment() {
+    local _rc="${1:-1}"
+    local _cause="${2:-}"
+    local _msg
+    if [ -n "$_cause" ]; then
+        _msg=$(printf '%s\n\n%s\n\n%s\n\n%s' \
+            ':x: **PR review failed**' \
+            "The automated run stopped with exit code **${_rc}**." \
+            "**Cause:** $(printf '%s' "$_cause")" \
+            "_Posted automatically by \`${SCRIPT_NAME}\`._")
+    else
+        _msg=$(printf '%s\n\n%s\n\n%s\n\n%s' \
+            ':x: **PR review failed**' \
+            "The automated run stopped with exit code **${_rc}**." \
+            'See server logs for this run for full details.' \
+            "_Posted automatically by \`${SCRIPT_NAME}\`._")
+    fi
+    post_pr_markdown_comment "$_msg"
 }
 
 # Fail fast with a clear message if GitHub has no such PR (refs/pull/N/head will not exist).
@@ -179,6 +214,30 @@ release_cache_lock() {
     [ -n "${LOCK_FILE}" ] && rm -f "${LOCK_FILE}" 2>/dev/null || true
 }
 
+# Clone the shared xianix-team plugin repo with retries. If another concurrent run
+# wins the race and leaves a valid repo at XIANIX_CACHE_DIR, pull instead of failing.
+_clone_xianix_plugin_repo() {
+    local attempt=1
+    mkdir -p "$(dirname "${XIANIX_CACHE_DIR}")"
+    while [ "$attempt" -le "$RETRY_COUNT" ]; do
+        if git clone --depth=1 --quiet "${XIANIX_REPO}" "${XIANIX_CACHE_DIR}"; then
+            return 0
+        fi
+        if git -C "${XIANIX_CACHE_DIR}" rev-parse --git-dir &>/dev/null 2>&1; then
+            log "xianix-team plugin repo already present (concurrent run); pulling latest"
+            retry git -C "${XIANIX_CACHE_DIR}" pull --ff-only --quiet
+            return 0
+        fi
+        if [ "$attempt" -ge "$RETRY_COUNT" ]; then
+            return 1
+        fi
+        warn "Attempt ${attempt}/${RETRY_COUNT} failed — retrying in ${RETRY_DELAY}s..."
+        sleep "$RETRY_DELAY"
+        attempt=$(( attempt + 1 ))
+    done
+    return 1
+}
+
 # ---------------------------------------------------------------------------
 # Cleanup trap — runs on any exit (success, error, or signal)
 # ---------------------------------------------------------------------------
@@ -189,6 +248,10 @@ REPO_CACHE_DIR_GLOBAL=""
 
 cleanup() {
     local exit_code=$?
+
+    if [ "$exit_code" -ne 0 ]; then
+        post_pr_failure_comment "$exit_code" "${LAST_ERROR_MESSAGE:-}" || true
+    fi
 
     release_cache_lock
 
@@ -298,6 +361,8 @@ PLUGIN_DIR="${XIANIX_CACHE_DIR}/plugins/pr-reviewer"
 for cmd in git claude python3; do
     command -v "$cmd" > /dev/null 2>&1 || fail "'${cmd}' is not installed"
 done
+
+post_pr_start_comment
 
 # ---------------------------------------------------------------------------
 # Step 1: Build / update the shared bare clone, then create a per-run worktree
@@ -422,6 +487,12 @@ esac
 #
 # We clone the repo directly and pass the plugin path to claude via --plugin-dir
 # so this works in any environment: CI, webhook server, or local terminal.
+#
+# Concurrent PR reviews share XIANIX_CACHE_DIR. Without a lock, parallel git clone
+# calls race and one fails with "destination path already exists".
+
+XIANIX_PLUGIN_LOCK_DIR="${PR_REVIEW_XIANIX_LOCK_DIR:-$(dirname "${XIANIX_CACHE_DIR}")/.xianix-plugin-lock}"
+acquire_cache_lock "${XIANIX_PLUGIN_LOCK_DIR}"
 
 if git -C "${XIANIX_CACHE_DIR}" rev-parse --git-dir &>/dev/null 2>&1; then
     log "Updating xianix-team plugin repo at ${XIANIX_CACHE_DIR}"
@@ -432,9 +503,13 @@ else
         rm -rf "${XIANIX_CACHE_DIR}"
     fi
     log "Cloning xianix-team plugin repo to ${XIANIX_CACHE_DIR}"
-    mkdir -p "$(dirname "${XIANIX_CACHE_DIR}")"
-    retry git clone --depth=1 --quiet "${XIANIX_REPO}" "${XIANIX_CACHE_DIR}"
+    if ! _clone_xianix_plugin_repo; then
+        release_cache_lock
+        fail "Could not clone xianix-team plugin repo to ${XIANIX_CACHE_DIR}"
+    fi
 fi
+
+release_cache_lock
 
 [ -d "${PLUGIN_DIR}" ] || fail "Plugin directory not found at ${PLUGIN_DIR} — check XIANIX_REPO"
 log "Plugin ready at ${PLUGIN_DIR}"
@@ -451,19 +526,23 @@ if [ "$PLATFORM" = "github" ]; then
     MCP_CONFIG_ARGS=(--mcp-config "${HOME}/.claude/mcp-config-pr-review.json")
 fi
 
+set +e
 CLAUDE_OUTPUT=$(claude \
     --dangerously-skip-permissions \
     --verbose \
     --plugin-dir "${PLUGIN_DIR}" \
     ${MCP_CONFIG_ARGS[@]+"${MCP_CONFIG_ARGS[@]}"} \
-    -p "${REVIEW_PROMPT}" 2>&1) || {
-    CLAUDE_EXIT=$?
-    echo "$CLAUDE_OUTPUT"
-    if echo "$CLAUDE_OUTPUT" | grep -qi "credit balance is too low\|insufficient.*credit\|billing\|payment"; then
-        fail "Claude API credit balance is too low — top up your Anthropic account at https://console.anthropic.com/settings/billing"
-    fi
-    fail "claude exited with code ${CLAUDE_EXIT}"
-}
+    -p "${REVIEW_PROMPT}" 2>&1)
+CLAUDE_EXIT=$?
+set -e
 echo "$CLAUDE_OUTPUT"
+if [ "$CLAUDE_EXIT" -ne 0 ]; then
+    if echo "$CLAUDE_OUTPUT" | grep -qi "credit balance is too low\|insufficient.*credit\|billing\|payment"; then
+        LAST_ERROR_MESSAGE="Claude API credit balance is too low — top up your Anthropic account at https://console.anthropic.com/settings/billing"
+    else
+        LAST_ERROR_MESSAGE="claude exited with code ${CLAUDE_EXIT}"
+    fi
+    exit "$CLAUDE_EXIT"
+fi
 
 log "Review complete"

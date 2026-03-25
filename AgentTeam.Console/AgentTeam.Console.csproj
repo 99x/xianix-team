@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="agents.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Temporalio" Version="1.11.1" />
     <PackageReference Include="Azure.AI.OpenAI" Version="2.1.0" />
     <PackageReference Include="Azure.Identity" Version="1.17.1" />
