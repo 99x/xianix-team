@@ -62,12 +62,12 @@ var integratorWorkflow = xianixAgent.Workflows.DefineIntegrator();
 integratorWorkflow.OnWebhook(async (context) =>
 {
     var webhookName = (string?)context.Webhook.Name;
-    if (string.Equals(webhookName, "pr-reviewer", StringComparison.OrdinalIgnoreCase))
+    if (webhookName?.StartsWith("pr-reviewer", StringComparison.OrdinalIgnoreCase) == true)
     {
         await PrReviewAgent.HandleWebhookAsync(context, agentLogger);
         return;
     }
-    if (string.Equals(webhookName, "req-analyst", StringComparison.OrdinalIgnoreCase))
+    if (webhookName?.StartsWith("req-analyst", StringComparison.OrdinalIgnoreCase) == true)
     {
         await RequirementAnalysisAgent.HandleWebhookAsync(context, agentLogger);
         return;

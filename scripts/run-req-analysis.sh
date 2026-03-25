@@ -31,6 +31,7 @@
 #   REPO_CACHE_DIR    Directory for the shared bare clone cache (default: /tmp/requirement-analysis-cache/<repo-slug>)
 #   WORKDIR           Per-run worktree directory (default: /tmp/requirement-analysis-<ISSUE_NUMBER>-<timestamp>)
 #   KEEP_WORKDIR      Set to "1" to preserve the worktree after the run (for debugging)
+#   REQUIREMENT_ANALYSIS_SKIP_ISSUE_COMMENTS  Set to "1" to skip GitHub / Azure DevOps issue comments (local dev)
 
 set -euo pipefail
 
@@ -38,8 +39,104 @@ set -euo pipefail
 # Helpers
 # ---------------------------------------------------------------------------
 
-log()  { echo "[run-requirement-analysis] $*"; }
-fail() { echo "[run-requirement-analysis] ERROR: $*" >&2; exit 1; }
+readonly SCRIPT_NAME="run-requirement-analysis"
+
+log()  { echo "[${SCRIPT_NAME}] $*"; }
+warn() { echo "[${SCRIPT_NAME}] WARN: $*" >&2; }
+
+# Set by fail() so the EXIT trap can post the same message to the issue.
+LAST_ERROR_MESSAGE=""
+
+fail() {
+    echo "[${SCRIPT_NAME}] ERROR: $*" >&2
+    LAST_ERROR_MESSAGE="$*"
+    exit 1
+}
+
+# Encode arbitrary text as a JSON string (for API bodies).
+json_encode() {
+    printf '%s' "$1" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null
+}
+
+# Best-effort comment on the issue / work item. Skips when env is incomplete or REQUIREMENT_ANALYSIS_SKIP_ISSUE_COMMENTS=1.
+post_issue_markdown_comment() {
+    local _body="$1"
+    [ "${REQUIREMENT_ANALYSIS_SKIP_ISSUE_COMMENTS:-0}" != "1" ] || { log "Skipping issue comment (REQUIREMENT_ANALYSIS_SKIP_ISSUE_COMMENTS=1)"; return 0; }
+    [ -n "${PLATFORM:-}" ] && [ -n "${ISSUE_NUMBER:-}" ] && [ -n "${REPO_URL:-}" ] || return 0
+
+    local _json_body
+    _json_body=$(json_encode "$_body") || return 0
+
+    case "$PLATFORM" in
+        github)
+            [ -n "${GITHUB_TOKEN:-}" ] || return 0
+            local _repo_path
+            _repo_path=$(printf '%s' "$REPO_URL" | sed 's|https://github.com/||; s|\.git$||')
+            log "Posting comment to GitHub issue #${ISSUE_NUMBER}"
+            curl -s -o /dev/null \
+                -X POST \
+                -H "Authorization: token ${GITHUB_TOKEN}" \
+                -H "Content-Type: application/json" \
+                -H "Accept: application/vnd.github+json" \
+                -d "{\"body\": ${_json_body}}" \
+                "https://api.github.com/repos/${_repo_path}/issues/${ISSUE_NUMBER}/comments" \
+                || warn "Failed to post comment to GitHub issue #${ISSUE_NUMBER}"
+            ;;
+        azure-devops)
+            [ -n "${AZURE_TOKEN:-}" ] || return 0
+            local _parts _org _project _b64
+            _parts=$(printf '%s' "$REPO_URL" | sed 's|https://dev.azure.com/||')
+            _org=$(printf '%s' "$_parts" | cut -d'/' -f1)
+            _project=$(printf '%s' "$_parts" | cut -d'/' -f2)
+            _b64=$(printf ':%s' "$AZURE_TOKEN" | base64 | tr -d '\n')
+            log "Posting comment to Azure DevOps work item #${ISSUE_NUMBER}"
+            curl -s -o /dev/null \
+                -X POST \
+                -H "Authorization: Basic ${_b64}" \
+                -H "Content-Type: application/json" \
+                -d "{\"text\": ${_json_body}}" \
+                "https://dev.azure.com/${_org}/${_project}/_apis/wit/workitems/${ISSUE_NUMBER}/comments?api-version=7.1-preview.3" \
+                || warn "Failed to post comment to Azure DevOps work item #${ISSUE_NUMBER}"
+            ;;
+    esac
+}
+
+post_issue_start_comment() {
+    local _msg
+    _msg=$(printf '%s\n\n%s\n\n%s' \
+        ':hourglass: **Requirement analysis started**' \
+        'Automated requirement analysis is running for this issue.' \
+        "_Posted automatically by \`${SCRIPT_NAME}\`._")
+    post_issue_markdown_comment "$_msg"
+}
+
+# Called from EXIT trap on non-zero exit. Optional explicit message from fail(); otherwise generic.
+post_issue_error_comment() {
+    local _rc="${1:-1}"
+    local _cause="${2:-}"
+    local _msg
+    if [ -n "$_cause" ]; then
+        _msg=$(printf '%s\n\n%s\n\n%s\n\n%s' \
+            ':x: **Requirement analysis failed**' \
+            "The automated run stopped with exit code **${_rc}**." \
+            "**Cause:** $(printf '%s' "$_cause")" \
+            "_Posted automatically by \`${SCRIPT_NAME}\`._")
+    else
+        _msg=$(printf '%s\n\n%s\n\n%s\n\n%s' \
+            ':x: **Requirement analysis failed**' \
+            "The automated run stopped with exit code **${_rc}**." \
+            'See server logs for this run for full details.' \
+            "_Posted automatically by \`${SCRIPT_NAME}\`._")
+    fi
+    post_issue_markdown_comment "$_msg"
+}
+
+cleanup_on_exit() {
+    local _rc=$?
+    [ "$_rc" -eq 0 ] && return 0
+    post_issue_error_comment "$_rc" "${LAST_ERROR_MESSAGE:-}" || true
+}
+trap cleanup_on_exit EXIT
 
 # ---------------------------------------------------------------------------
 # Parse flags
@@ -90,6 +187,8 @@ REPO_CACHE_DIR="${REPO_CACHE_DIR:-/tmp/requirement-analysis-cache/${REPO_SLUG}}"
 command -v git    > /dev/null 2>&1 || fail "git is not installed"
 command -v claude > /dev/null 2>&1 || fail "claude CLI is not installed (https://docs.anthropic.com/claude-code)"
 
+post_issue_start_comment
+
 # ---------------------------------------------------------------------------
 # Step 1: Build / update the shared bare clone, then create a per-run worktree
 # ---------------------------------------------------------------------------
@@ -105,8 +204,15 @@ case "$PLATFORM" in
 esac
 
 if [ -d "${REPO_CACHE_DIR}" ]; then
-    log "Updating bare cache at ${REPO_CACHE_DIR}"
-    git -C "${REPO_CACHE_DIR}" fetch --prune --depth=50 origin
+    if git -C "${REPO_CACHE_DIR}" rev-parse --is-bare-repository >/dev/null 2>&1; then
+        log "Updating bare cache at ${REPO_CACHE_DIR}"
+        git -C "${REPO_CACHE_DIR}" fetch --prune --depth=50 origin
+    else
+        log "Removing stale cache at ${REPO_CACHE_DIR} (not a bare git repo) and recloning"
+        rm -rf "${REPO_CACHE_DIR}"
+        mkdir -p "$(dirname "${REPO_CACHE_DIR}")"
+        git clone --bare --depth=50 "$AUTH_URL" "${REPO_CACHE_DIR}"
+    fi
 else
     log "Creating bare cache at ${REPO_CACHE_DIR}"
     mkdir -p "$(dirname "${REPO_CACHE_DIR}")"
@@ -176,11 +282,16 @@ PLUGIN_DIR="${XIANIX_CACHE_DIR}/plugins/req-analyst"
 
 if [ "${XIANIX_USE_LOCAL:-0}" = "1" ]; then
     log "Using local xianix-team at ${XIANIX_CACHE_DIR} (XIANIX_USE_LOCAL=1)"
-elif [ -d "${XIANIX_CACHE_DIR}/.git" ]; then
+elif [ -d "${XIANIX_CACHE_DIR}" ] && git -C "${XIANIX_CACHE_DIR}" rev-parse --git-dir >/dev/null 2>&1; then
     log "Updating xianix-team plugin repo at ${XIANIX_CACHE_DIR}"
     git -C "${XIANIX_CACHE_DIR}" pull --ff-only --quiet
 else
-    log "Cloning xianix-team plugin repo to ${XIANIX_CACHE_DIR}"
+    if [ -d "${XIANIX_CACHE_DIR}" ]; then
+        log "Removing stale xianix-team cache at ${XIANIX_CACHE_DIR} (not a valid git repo) and recloning"
+        rm -rf "${XIANIX_CACHE_DIR}"
+    else
+        log "Cloning xianix-team plugin repo to ${XIANIX_CACHE_DIR}"
+    fi
     mkdir -p "$(dirname "${XIANIX_CACHE_DIR}")"
     git clone --depth=1 --quiet "${XIANIX_REPO}" "${XIANIX_CACHE_DIR}"
 fi
@@ -195,12 +306,24 @@ log "Plugin ready at ${PLUGIN_DIR}"
 ANALYSIS_PROMPT="/analyze-requirement ${ISSUE_NUMBER} ${COMMENT_FLAG}"
 log "Running: ${ANALYSIS_PROMPT}"
 
-claude \
+set +e
+CLAUDE_OUTPUT=$(claude \
     --dangerously-skip-permissions \
     --verbose \
     --plugin-dir "${PLUGIN_DIR}" \
     --mcp-config "${HOME}/.claude/mcp-config-requirement-analysis.json" \
-    -p "${ANALYSIS_PROMPT}"
+    -p "${ANALYSIS_PROMPT}" 2>&1)
+CLAUDE_EXIT=$?
+set -e
+printf '%s\n' "$CLAUDE_OUTPUT"
+if [ "$CLAUDE_EXIT" -ne 0 ]; then
+    if printf '%s' "$CLAUDE_OUTPUT" | grep -qi "credit balance is too low\|insufficient.*credit\|billing\|payment"; then
+        LAST_ERROR_MESSAGE="Claude API credit balance is too low — top up your Anthropic account at https://console.anthropic.com/settings/billing"
+    else
+        LAST_ERROR_MESSAGE="claude exited with code ${CLAUDE_EXIT}"
+    fi
+    exit "$CLAUDE_EXIT"
+fi
 
 log "Requirement analysis complete"
 

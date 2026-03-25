@@ -7,7 +7,7 @@ using Xians.Lib.Logging;
 namespace AgentTeam.Console.Workflows;
 
 /// <summary>
-/// Temporal activity that runs the run-requirement-analysis.sh script with the given issue context.
+/// Temporal activity that runs scripts/run-req-analysis.sh with the given issue context.
 /// </summary>
 public class RunRequirementAnalysisActivity
 {
@@ -24,7 +24,7 @@ public class RunRequirementAnalysisActivity
             .ReportAsync();
 
         var repoRoot = ResolveRepoRoot();
-        var scriptPath = Path.Combine(repoRoot, "scripts", "run-requirement-analysis.sh");
+        var scriptPath = Path.Combine(repoRoot, "scripts", "run-req-analysis.sh");
 
         Logger.LogInformation(
             "Starting requirement analysis for {Platform} {Repo}#{IssueNumber} (script: {ScriptPath})",
@@ -33,7 +33,7 @@ public class RunRequirementAnalysisActivity
         if (!File.Exists(scriptPath))
         {
             Logger.LogError(
-                "run-requirement-analysis.sh not found at {ScriptPath}. Set XIANIX_REPO_ROOT to repo root if needed.", scriptPath);
+                "run-req-analysis.sh not found at {ScriptPath}. Set XIANIX_REPO_ROOT to repo root if needed.", scriptPath);
             await XiansContext.Metrics
                 .WithCustomIdentifier($"{input.PlatformName}:{input.RepoUrl}#{input.IssueNumber}")
                 .WithMetadata("platform", input.PlatformName)
@@ -60,7 +60,7 @@ public class RunRequirementAnalysisActivity
         using var process = Process.Start(startInfo);
         if (process is null)
         {
-            Logger.LogError("Failed to start run-requirement-analysis.sh");
+            Logger.LogError("Failed to start run-req-analysis.sh");
             await XiansContext.Metrics
                 .WithCustomIdentifier($"{input.PlatformName}:{input.RepoUrl}#{input.IssueNumber}")
                 .WithMetadata("platform", input.PlatformName)
@@ -117,7 +117,7 @@ public class RunRequirementAnalysisActivity
         if (Environment.GetEnvironmentVariable("XIANIX_REPO_ROOT") is { Length: > 0 } envRoot)
         {
             var path = Path.GetFullPath(envRoot);
-            if (File.Exists(Path.Combine(path, "scripts", "run-requirement-analysis.sh")))
+            if (File.Exists(Path.Combine(path, "scripts", "run-req-analysis.sh")))
                 return path;
         }
 
@@ -126,7 +126,7 @@ public class RunRequirementAnalysisActivity
             var dir = Path.GetFullPath(startDir);
             while (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
             {
-                var scriptPath = Path.Combine(dir, "scripts", "run-requirement-analysis.sh");
+                var scriptPath = Path.Combine(dir, "scripts", "run-req-analysis.sh");
                 if (File.Exists(scriptPath))
                     return dir;
                 dir = Path.GetDirectoryName(dir);

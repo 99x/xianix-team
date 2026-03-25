@@ -20,7 +20,7 @@
 #
 #   PLATFORM          github | azure-devops
 #   REPO_URL          Full HTTPS clone URL of the repository to review
-#   PR_NUMBER         PR / Pull Request ID to review
+#   PR_NUMBER         Pull request number in the target repo (from …/pull/NN). Not always the same as an issue number.
 #
 # GitHub-specific:
 #   GITHUB_TOKEN      PAT with repo + pull_requests scopes (used by MCP + git push)
@@ -119,6 +119,25 @@ post_pr_error_comment() {
                 -d "{\"comments\":[{\"content\":${_json_body},\"commentType\":1}],\"status\":1}" \
                 "https://dev.azure.com/${_org}/${_project}/_apis/git/repositories/${_repo_name}/pullRequests/${_pr}/threads?api-version=7.1" \
             || warn "Failed to post error comment to Azure DevOps PR #${_pr}"
+            ;;
+    esac
+}
+
+# Fail fast with a clear message if GitHub has no such PR (refs/pull/N/head will not exist).
+verify_github_pr_exists() {
+    local _repo_path _code
+    _repo_path=$(printf '%s' "$REPO_URL" | sed 's|https://github.com/||; s|\.git$||')
+    _code=$(curl -s -o /dev/null -w "%{http_code}" \
+        -H "Authorization: token ${GITHUB_TOKEN}" \
+        -H "Accept: application/vnd.github+json" \
+        "https://api.github.com/repos/${_repo_path}/pulls/${PR_NUMBER}")
+    case "$_code" in
+        200) return 0 ;;
+        404)
+            fail "GitHub pull request #${PR_NUMBER} was not found in ${_repo_path}. Issue numbers and PR numbers can differ — use the number from the pull request URL (…/pull/NN), not the issue list."
+            ;;
+        *)
+            warn "Could not verify PR #${PR_NUMBER} (HTTP ${_code}); continuing with git fetch"
             ;;
     esac
 }
@@ -344,6 +363,7 @@ cd "${WORKDIR}"
 #   by agent from API); else fall back through known Azure DevOps ref patterns.
 case "$PLATFORM" in
     github)
+        verify_github_pr_exists
         retry git fetch origin "refs/pull/${PR_NUMBER}/head:${PR_BRANCH}" --depth="${FETCH_DEPTH}"
         ;;
     azure-devops)
