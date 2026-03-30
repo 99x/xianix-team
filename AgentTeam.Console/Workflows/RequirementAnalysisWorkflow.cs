@@ -1,3 +1,4 @@
+using AgentTeam.Console;
 using Microsoft.Extensions.Logging;
 using Temporalio.Exceptions;
 using Temporalio.Workflows;
@@ -8,7 +9,7 @@ namespace AgentTeam.Console.Workflows;
 /// Per-issue workflow that runs scripts/run-req-analysis.sh for a single backlog item.
 /// Started by the integrator on each webhook; receives issue context and executes the script via activity.
 /// </summary>
-[Workflow("Xianix Agent Team:Requirement Analysis Workflow")]
+[Workflow(AgentRegistration.Name + ":Requirement Analysis Workflow")]
 public class RequirementAnalysisWorkflow
 {
     /// <summary>

@@ -1,3 +1,4 @@
+using AgentTeam.Console;
 using AgentTeam.Console.Agents;
 using DotNetEnv;
 using Microsoft.Extensions.Logging;
@@ -43,8 +44,8 @@ var agentLogger = agentLoggerFactory.CreateLogger("XianixAgent");
 
 var xianixAgent = xiansPlatform.Agents.Register(new()
 {
-    Name = "Xianix Agents v0.1",
-    Category = "AI-DLC",
+    Name = AgentRegistration.Name,
+    Category = AgentRegistration.Category,
     Summary = "A coordinated mesh of AI agents across the full software development lifecycle.",
     Description = "A coordinated mesh of AI agents across the full software development lifecycle.",
     Version = "1.0.0",

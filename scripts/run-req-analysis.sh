@@ -31,15 +31,32 @@
 #   REPO_CACHE_DIR    Directory for the shared bare clone cache (default: /tmp/requirement-analysis-cache/<repo-slug>)
 #   WORKDIR           Per-run worktree directory (default: /tmp/requirement-analysis-<ISSUE_NUMBER>-<timestamp>)
 #   KEEP_WORKDIR      Set to "1" to preserve the worktree after the run (for debugging)
+#   GIT_FETCH_DEPTH   Shallow clone depth (default: 50)
+#   GIT_RETRY_COUNT   Number of retries for network operations (default: 3)
+#   GIT_RETRY_DELAY   Seconds between retries (default: 5)
+#   LOCK_TIMEOUT      Seconds to wait for cache lock before aborting (default: 120)
+#   REQUIREMENT_ANALYSIS_XIANIX_LOCK_DIR  Directory used for flock around the shared xianix-team plugin clone
+#                                         (default: <parent of XIANIX_CACHE_DIR>/.xianix-plugin-lock)
 #   REQUIREMENT_ANALYSIS_SKIP_ISSUE_COMMENTS  Set to "1" to skip GitHub / Azure DevOps issue comments (local dev)
 
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Constants
 # ---------------------------------------------------------------------------
 
 readonly SCRIPT_NAME="run-requirement-analysis"
+readonly FETCH_DEPTH="${GIT_FETCH_DEPTH:-50}"
+readonly RETRY_COUNT="${GIT_RETRY_COUNT:-3}"
+readonly RETRY_DELAY="${GIT_RETRY_DELAY:-5}"
+readonly LOCK_TIMEOUT="${LOCK_TIMEOUT:-120}"
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+LOCK_FD=9
+LOCK_FILE=""
 
 log()  { echo "[${SCRIPT_NAME}] $*"; }
 warn() { echo "[${SCRIPT_NAME}] WARN: $*" >&2; }
@@ -131,8 +148,65 @@ post_issue_error_comment() {
     post_issue_markdown_comment "$_msg"
 }
 
+# Retry a command up to RETRY_COUNT times with RETRY_DELAY seconds between attempts.
+retry() {
+    local attempt=1
+    until "$@"; do
+        if [ "$attempt" -ge "$RETRY_COUNT" ]; then
+            fail "Command failed after ${RETRY_COUNT} attempts: $*"
+        fi
+        warn "Attempt ${attempt}/${RETRY_COUNT} failed — retrying in ${RETRY_DELAY}s..."
+        sleep "$RETRY_DELAY"
+        attempt=$(( attempt + 1 ))
+    done
+}
+
+# Acquire an advisory flock on the parent of the cache path to prevent concurrent mutation.
+acquire_cache_lock() {
+    local lock_dir="$1"
+    mkdir -p "$lock_dir"
+    LOCK_FILE="${lock_dir}.lock"
+    eval "exec ${LOCK_FD}>\"${LOCK_FILE}\""
+    if ! flock --exclusive --timeout "${LOCK_TIMEOUT}" "${LOCK_FD}" 2>/dev/null; then
+        if command -v flock > /dev/null 2>&1; then
+            fail "Timed out waiting ${LOCK_TIMEOUT}s for cache lock: ${LOCK_FILE}"
+        fi
+        warn "flock not available — proceeding without cache lock (concurrent runs may race)"
+    fi
+}
+
+release_cache_lock() {
+    eval "exec ${LOCK_FD}>&-" 2>/dev/null || true
+    [ -n "${LOCK_FILE}" ] && rm -f "${LOCK_FILE}" 2>/dev/null || true
+}
+
+# Clone the shared xianix-team plugin repo with retries. If another concurrent run
+# wins the race and leaves a valid repo at XIANIX_CACHE_DIR, pull instead of failing.
+_clone_xianix_plugin_repo() {
+    local attempt=1
+    mkdir -p "$(dirname "${XIANIX_CACHE_DIR}")"
+    while [ "$attempt" -le "$RETRY_COUNT" ]; do
+        if git clone --depth=1 --quiet "${XIANIX_REPO}" "${XIANIX_CACHE_DIR}"; then
+            return 0
+        fi
+        if git -C "${XIANIX_CACHE_DIR}" rev-parse --git-dir &>/dev/null 2>&1; then
+            log "xianix-team plugin repo already present (concurrent run); pulling latest"
+            retry git -C "${XIANIX_CACHE_DIR}" pull --ff-only --quiet
+            return 0
+        fi
+        if [ "$attempt" -ge "$RETRY_COUNT" ]; then
+            return 1
+        fi
+        warn "Attempt ${attempt}/${RETRY_COUNT} failed — retrying in ${RETRY_DELAY}s..."
+        sleep "$RETRY_DELAY"
+        attempt=$(( attempt + 1 ))
+    done
+    return 1
+}
+
 cleanup_on_exit() {
     local _rc=$?
+    release_cache_lock || true
     [ "$_rc" -eq 0 ] && return 0
     post_issue_error_comment "$_rc" "${LAST_ERROR_MESSAGE:-}" || true
 }
@@ -173,51 +247,73 @@ case "$PLATFORM" in
         ;;
 esac
 
+# Normalize Azure DevOps remote URLs that embed the org name as a username
+# (e.g. https://OrgName@dev.azure.com/...) — the embedded username causes
+# "Bad hostname" errors when we later inject a token credential.
+if [ "$PLATFORM" = "azure-devops" ]; then
+    REPO_URL=$(echo "$REPO_URL" | sed 's|https://[^@]*@dev\.azure\.com|https://dev.azure.com|')
+fi
+
 XIANIX_REPO="${XIANIX_REPO:-https://github.com/99x/xianix-team.git}"
 WORKDIR="${WORKDIR:-/tmp/requirement-analysis-${ISSUE_NUMBER}-$(date +%s)}"
 
-# Derive a filesystem-safe slug from the repo URL for the bare cache directory.
-REPO_SLUG=$(echo "$REPO_URL" | sed 's|https://||; s|\.git$||; s|[/:]|-|g')
+# Filesystem-safe slug: strip protocol, strip .git suffix, replace / and : with -
+# e.g. https://github.com/org/repo.git  →  github.com-org-repo
+REPO_SLUG=$(echo "$REPO_URL" \
+    | sed 's|https://||; s|\.git$||; s|[/: ]|-|g; s|%[0-9A-Fa-f][0-9A-Fa-f]|-|g')
 REPO_CACHE_DIR="${REPO_CACHE_DIR:-/tmp/requirement-analysis-cache/${REPO_SLUG}}"
 
 # ---------------------------------------------------------------------------
 # Prerequisites check
 # ---------------------------------------------------------------------------
 
-command -v git    > /dev/null 2>&1 || fail "git is not installed"
-command -v claude > /dev/null 2>&1 || fail "claude CLI is not installed (https://docs.anthropic.com/claude-code)"
+for cmd in git claude python3; do
+    command -v "$cmd" > /dev/null 2>&1 || fail "'${cmd}' is not installed"
+done
 
 post_issue_start_comment
 
 # ---------------------------------------------------------------------------
 # Step 1: Build / update the shared bare clone, then create a per-run worktree
 # ---------------------------------------------------------------------------
+#
+# Token injection is done via GIT_CONFIG env vars (never written to any file)
+# to avoid leaking credentials into the .git/config or shell history.
+# Matches run-pr-review.sh: lock, retry, valid bare cache via HEAD, fresh clone if missing.
 
-# Build the authenticated URL (token inline, never written to disk)
 case "$PLATFORM" in
     github)
-        AUTH_URL=$(echo "$REPO_URL" | sed "s|https://github.com/|https://x-access-token:${GIT_AUTH_TOKEN}@github.com/|")
+        export GIT_CONFIG_COUNT=1
+        export GIT_CONFIG_KEY_0="url.https://x-access-token:${GIT_AUTH_TOKEN}@github.com/.insteadOf"
+        export GIT_CONFIG_VALUE_0="https://github.com/"
         ;;
     azure-devops)
-        AUTH_URL=$(echo "$REPO_URL" | sed "s|https://|https://token:${GIT_AUTH_TOKEN}@|")
+        AZURE_HOST=$(echo "$REPO_URL" | sed 's|https://||' | cut -d'/' -f1)
+        export GIT_CONFIG_COUNT=1
+        export GIT_CONFIG_KEY_0="url.https://token:${GIT_AUTH_TOKEN}@${AZURE_HOST}/.insteadOf"
+        export GIT_CONFIG_VALUE_0="https://${AZURE_HOST}/"
         ;;
 esac
 
-if [ -d "${REPO_CACHE_DIR}" ]; then
-    if git -C "${REPO_CACHE_DIR}" rev-parse --is-bare-repository >/dev/null 2>&1; then
-        log "Updating bare cache at ${REPO_CACHE_DIR}"
-        git -C "${REPO_CACHE_DIR}" fetch --prune --depth=50 origin
-    else
-        log "Removing stale cache at ${REPO_CACHE_DIR} (not a bare git repo) and recloning"
-        rm -rf "${REPO_CACHE_DIR}"
-        mkdir -p "$(dirname "${REPO_CACHE_DIR}")"
-        git clone --bare --depth=50 "$AUTH_URL" "${REPO_CACHE_DIR}"
-    fi
+acquire_cache_lock "${REPO_CACHE_DIR}"
+
+if [ -f "${REPO_CACHE_DIR}/HEAD" ]; then
+    log "Updating bare cache at ${REPO_CACHE_DIR}"
+    rm -f "${REPO_CACHE_DIR}/shallow.lock" \
+          "${REPO_CACHE_DIR}/packed-refs.lock" \
+          "${REPO_CACHE_DIR}/HEAD.lock"
+    retry git -C "${REPO_CACHE_DIR}" fetch --prune --depth="${FETCH_DEPTH}" origin
 else
+    if [ -d "${REPO_CACHE_DIR}" ]; then
+        warn "Removing incomplete bare cache at ${REPO_CACHE_DIR}"
+        rm -rf "${REPO_CACHE_DIR}"
+    fi
     log "Creating bare cache at ${REPO_CACHE_DIR}"
     mkdir -p "$(dirname "${REPO_CACHE_DIR}")"
-    git clone --bare --depth=50 "$AUTH_URL" "${REPO_CACHE_DIR}"
+    retry git clone --bare --depth="${FETCH_DEPTH}" "${REPO_URL}" "${REPO_CACHE_DIR}"
 fi
+
+release_cache_lock
 
 log "Creating isolated worktree at ${WORKDIR}"
 git -C "${REPO_CACHE_DIR}" worktree add --detach "$WORKDIR"
@@ -279,21 +375,29 @@ esac
 
 XIANIX_CACHE_DIR="${XIANIX_CACHE_DIR:-/tmp/requirement-analysis-cache/xianix-team}"
 PLUGIN_DIR="${XIANIX_CACHE_DIR}/plugins/req-analyst"
+XIANIX_PLUGIN_LOCK_DIR="${REQUIREMENT_ANALYSIS_XIANIX_LOCK_DIR:-$(dirname "${XIANIX_CACHE_DIR}")/.xianix-plugin-lock}"
 
 if [ "${XIANIX_USE_LOCAL:-0}" = "1" ]; then
     log "Using local xianix-team at ${XIANIX_CACHE_DIR} (XIANIX_USE_LOCAL=1)"
-elif [ -d "${XIANIX_CACHE_DIR}" ] && git -C "${XIANIX_CACHE_DIR}" rev-parse --git-dir >/dev/null 2>&1; then
-    log "Updating xianix-team plugin repo at ${XIANIX_CACHE_DIR}"
-    git -C "${XIANIX_CACHE_DIR}" pull --ff-only --quiet
 else
-    if [ -d "${XIANIX_CACHE_DIR}" ]; then
-        log "Removing stale xianix-team cache at ${XIANIX_CACHE_DIR} (not a valid git repo) and recloning"
-        rm -rf "${XIANIX_CACHE_DIR}"
+    acquire_cache_lock "${XIANIX_PLUGIN_LOCK_DIR}"
+
+    if git -C "${XIANIX_CACHE_DIR}" rev-parse --git-dir &>/dev/null 2>&1; then
+        log "Updating xianix-team plugin repo at ${XIANIX_CACHE_DIR}"
+        retry git -C "${XIANIX_CACHE_DIR}" pull --ff-only --quiet
     else
+        if [ -d "${XIANIX_CACHE_DIR}" ]; then
+            warn "Removing incomplete/corrupt xianix-team cache at ${XIANIX_CACHE_DIR}"
+            rm -rf "${XIANIX_CACHE_DIR}"
+        fi
         log "Cloning xianix-team plugin repo to ${XIANIX_CACHE_DIR}"
+        if ! _clone_xianix_plugin_repo; then
+            release_cache_lock
+            fail "Could not clone xianix-team plugin repo to ${XIANIX_CACHE_DIR}"
+        fi
     fi
-    mkdir -p "$(dirname "${XIANIX_CACHE_DIR}")"
-    git clone --depth=1 --quiet "${XIANIX_REPO}" "${XIANIX_CACHE_DIR}"
+
+    release_cache_lock
 fi
 
 [ -d "${PLUGIN_DIR}" ] || fail "Plugin directory not found at ${PLUGIN_DIR} — check XIANIX_REPO"
