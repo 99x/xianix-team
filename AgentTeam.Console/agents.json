@@ -20,6 +20,46 @@
     ]
   },
   {
+    "AgentName": "security-agent",
+    "WebhookFilterRules": [
+      {
+        "RuleName": "GitHubPRLabeledSecurityReview",
+        "whenAll": [
+          { "path": "pull_request", "exists": true },
+          { "path": "action", "in": ["opened", "labeled"] },
+          {
+            "path": "pull_request.labels",
+            "arrayAny": { "property": "name", "equals": "security-review" }
+          }
+        ]
+      },
+      {
+        "RuleName": "GitHubPRSynchronizedWithSecurityLabel",
+        "whenAll": [
+          { "path": "pull_request", "exists": true },
+          { "path": "action", "in": ["synchronize", "synchronized"] },
+          {
+            "path": "pull_request.labels",
+            "arrayAny": { "property": "name", "equals": "security-review" }
+          }
+        ]
+      },
+      {
+        "RuleName": "AzureDevOpsPullRequestSecurityReview",
+        "whenAll": [
+          {
+            "path": "eventType",
+            "in": [
+              "git.pullrequest.created",
+              "git.pullrequest.updated",
+              "ms.vss-code.git-pullrequest-event"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "AgentName": "pr-reviewer",
     "WebhookFilterRules": [
       {

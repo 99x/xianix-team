@@ -21,6 +21,13 @@
       "description": "Requirement analysis plugin that elaborates backlog items with structured acceptance criteria, dependency mapping, risk identification, and gap detection.",
       "version": "1.0.0",
       "keywords": ["requirement-analysis", "backlog", "grooming", "acceptance-criteria", "gap-detection"]
+    },
+    {
+      "name": "security-agent",
+      "source": "./plugins/security-agent",
+      "description": "Security review plugin that analyzes pull requests for vulnerabilities, exposed secrets, and insecure patterns based on OWASP Top 10.",
+      "version": "1.0.0",
+      "keywords": ["security", "security-review", "vulnerability", "owasp", "secrets-detection", "pr-review"]
     }
   ]
 }

@@ -56,12 +56,15 @@ xianixAgent.Workflows.DefineCustom<PrReviewScriptWorkflow>(new WorkflowOptions {
     .AddActivity<RunPrReviewScriptActivity>();
 xianixAgent.Workflows.DefineCustom<RequirementAnalysisWorkflow>(new WorkflowOptions { Activable = false })
     .AddActivity<RunRequirementAnalysisActivity>();
+xianixAgent.Workflows.DefineCustom<SecurityReviewWorkflow>(new WorkflowOptions { Activable = false })
+    .AddActivity<RunSecurityReviewActivity>();
 
 var integratorWorkflow = xianixAgent.Workflows.DefineIntegrator();
 integratorWorkflow.OnWebhook(async (context) =>
 {
     await PrReviewerAgent.HandleWebhookAsync(context, agentLogger, openAiApiKey);
     await ReqAnalystAgent.HandleWebhookAsync(context, agentLogger, openAiApiKey);
+    await SecurityReviewAgent.HandleWebhookAsync(context, agentLogger, openAiApiKey);
 });
 
 var supervisor = new MafSubAgent(openAiApiKey);
