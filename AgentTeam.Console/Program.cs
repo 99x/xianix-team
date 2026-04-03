@@ -49,6 +49,8 @@ var xianixAgent = xiansPlatform.Agents.Register(new()
     IsTemplate = true
 });
 
+var impactAnalysisAgent = ImpactAnalysisAgent.Register(xiansPlatform);
+
 xianixAgent.Workflows.DefineCustom<PrReviewScriptWorkflow>(new WorkflowOptions { Activable = false })
     .AddActivity<RunPrReviewScriptActivity>();
 xianixAgent.Workflows.DefineCustom<RequirementAnalysisWorkflow>(new WorkflowOptions { Activable = false })
@@ -70,6 +72,16 @@ integratorWorkflow.OnWebhook(async (context) =>
     }
 });
 
-Console.WriteLine("Agents registered. Listening for webhooks (pr-reviewer, req-analyst)...");
+Console.WriteLine("Agents registered. Listening for webhooks (pr-reviewer, req-analyst, imp-analyst)...");
 
-await xianixAgent.RunAllAsync();
+try
+{
+    await Task.WhenAll(
+        xianixAgent.RunAllAsync(),
+        impactAnalysisAgent.RunAllAsync()
+    ).WaitAsync(cts.Token);
+}
+catch (OperationCanceledException)
+{
+    Console.WriteLine("Shutting down gracefully...");
+}
