@@ -19,7 +19,7 @@ fi
 : "${AZURE_TOKEN:?AZURE_TOKEN must be set in .env or environment}"
 
 export PLATFORM=azure-devops
-export REPO_URL="${REPO_URL:-https://dev.azure.com/HasithY/Codalytix%20Test/_git/Codalytix%20Test}"
-export PR_NUMBER="${PR_NUMBER:-10}"
+export REPO_URL="${REPO_URL:-https://dev.azure.com/HasithY/Xianix-tests/_git/Xianix-tests}"
+export PR_NUMBER="${PR_NUMBER:-12}"
 
 exec "${SCRIPT_DIR}/../scripts/run-pr-review.sh" "$@"

@@ -1,3 +1,4 @@
+using AgentTeam.Console;
 using Microsoft.Extensions.Logging;
 using Temporalio.Common;
 using Temporalio.Exceptions;
@@ -9,7 +10,7 @@ namespace AgentTeam.Console.Workflows;
 /// Per-PR workflow that runs run-pr-review.sh for a single PR.
 /// Started by the integrator on each webhook; receives PR context and executes the script via activity.
 /// </summary>
-[Workflow("PR Review Agent:PR Review Script Workflow")]
+[Workflow(AgentRegistration.Name + ":PR Review Script Workflow")]
 public class PrReviewScriptWorkflow
 {
     // Configurable via env var; defaults to 20 minutes to give scripts headroom.

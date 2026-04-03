@@ -1,9 +1,11 @@
+using AgentTeam.Console;
 using AgentTeam.Console.Agents;
 using DotNetEnv;
 using Microsoft.Extensions.Logging;
 using Xians.Lib.Agents.Core;
 using Xians.Lib.Agents.Workflows.Models;
 using AgentTeam.Console.Workflows;
+using AgentTeam.Console.Supervisor;
 
 // Load .env from project dir (works regardless of cwd when running)
 var envPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".env"));
@@ -16,6 +18,8 @@ var serverUrl = Environment.GetEnvironmentVariable("XIANS_SERVER_URL")
     ?? throw new InvalidOperationException("XIANS_SERVER_URL not found in environment variables");
 var xiansApiKey = Environment.GetEnvironmentVariable("XIANS_API_KEY")
     ?? throw new InvalidOperationException("XIANS_API_KEY not found in environment variables");
+var openAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY")
+    ?? throw new InvalidOperationException("OPENAI_API_KEY not found in environment variables");
 
 using var cts = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) =>
@@ -34,14 +38,14 @@ var xiansPlatform = await XiansPlatform.InitializeAsync(new()
     ConsoleLogLevel = LogLevel.Debug
 });
 
-// Agent registration and webhook listener (dispatches by webhook name: pr-reviewer, req-analyst)
+// Agent registration and webhook listener (each agent skips unless agents.json rules match)
 using var agentLoggerFactory = LoggerFactory.Create(b => b.AddConsole().SetMinimumLevel(LogLevel.Debug));
 var agentLogger = agentLoggerFactory.CreateLogger("XianixAgent");
 
 var xianixAgent = xiansPlatform.Agents.Register(new()
 {
-    Name = "Xianix Agent Team",
-    Category = "AI-DLC",
+    Name = AgentRegistration.Name,
+    Category = AgentRegistration.Category,
     Summary = "A coordinated mesh of AI agents across the full software development lifecycle.",
     Description = "A coordinated mesh of AI agents across the full software development lifecycle.",
     Version = "1.0.0",
@@ -59,17 +63,8 @@ xianixAgent.Workflows.DefineCustom<RequirementAnalysisWorkflow>(new WorkflowOpti
 var integratorWorkflow = xianixAgent.Workflows.DefineIntegrator();
 integratorWorkflow.OnWebhook(async (context) =>
 {
-    var webhookName = (string?)context.Webhook.Name;
-    if (string.Equals(webhookName, "pr-reviewer", StringComparison.OrdinalIgnoreCase))
-    {
-        await PrReviewAgent.HandleWebhookAsync(context, agentLogger);
-        return;
-    }
-    if (string.Equals(webhookName, "req-analyst", StringComparison.OrdinalIgnoreCase))
-    {
-        await RequirementAnalysisAgent.HandleWebhookAsync(context, agentLogger);
-        return;
-    }
+    await PrReviewerAgent.HandleWebhookAsync(context, agentLogger, openAiApiKey);
+    await ReqAnalystAgent.HandleWebhookAsync(context, agentLogger, openAiApiKey);
 });
 
 Console.WriteLine("Agents registered. Listening for webhooks (pr-reviewer, req-analyst, imp-analyst)...");

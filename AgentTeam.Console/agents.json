@@ -1,0 +1,83 @@
+[
+  {
+    "AgentName": "req-analyst",
+    "WebhookFilterRules": [
+      {
+        "RuleName": "GitHubAssignedToAgent",
+        "whenAll": [
+          { "path": "action", "equals": "assigned" },
+          { "path": "issue.state", "equals": "open" },
+          {
+            "path": "issue.assignees",
+            "arrayAny": { "property": "login", "equals": "xianix-agent" }
+          }
+        ]
+      },
+      {
+        "RuleName": "AzureDevOpsWorkItemCreated",
+        "whenAll": [{ "path": "eventType", "equals": "workitem.created" }]
+      }
+    ]
+  },
+  {
+    "AgentName": "pr-reviewer",
+    "WebhookFilterRules": [
+      {
+        "RuleName": "GitHubPullRequestOpenedWithAgentReviewer",
+        "whenAll": [
+          { "path": "pull_request", "exists": true },
+          { "path": "action", "equals": "opened" },
+          {
+            "path": "pull_request.requested_reviewers",
+            "arrayAny": { "property": "login", "equals": "xianix-agent" }
+          }
+        ]
+      },
+      {
+        "RuleName": "GitHubPullRequestSynchronizedWithAgentReviewer",
+        "whenAll": [
+          { "path": "pull_request", "exists": true },
+          {
+            "path": "action",
+            "in": ["synchronize", "synchronized"]
+          },
+          {
+            "path": "pull_request.requested_reviewers",
+            "arrayAny": { "property": "login", "equals": "xianix-agent" }
+          }
+        ]
+      },
+      {
+        "RuleName": "GitHubReviewRequestedFromAgent",
+        "whenAll": [
+          { "path": "action", "equals": "review_requested" },
+          {
+            "path": "pull_request.requested_reviewers",
+            "arrayAny": { "property": "login", "equals": "xianix-agent" }
+          }
+        ]
+      },
+      {
+        "RuleName": "GitHubPush",
+        "whenAll": [
+          { "path": "ref", "exists": true },
+          { "path": "commits", "exists": true },
+          { "path": "pull_request", "exists": false }
+        ]
+      },
+      {
+        "RuleName": "AzureDevOpsPullRequest",
+        "whenAll": [
+          {
+            "path": "eventType",
+            "in": [
+              "git.pullrequest.created",
+              "git.pullrequest.updated",
+              "ms.vss-code.git-pullrequest-event"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
