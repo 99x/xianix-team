@@ -20,8 +20,8 @@ fi
 : "${AZURE_TOKEN:?AZURE_TOKEN must be set in .env or environment}"
 
 export PLATFORM=azure-devops
-export REPO_URL="${REPO_URL:-https://dev.azure.com/HasithY/Xianix-tests/_git/Xianix-tests}"
-export PR_NUMBER="${PR_NUMBER:-12}"
+export REPO_URL="${REPO_URL:-https://github.com/XiansAiPlatform/XiansAi.Lib.git}"
+export PR_NUMBER="${PR_NUMBER:-83}"
 
 # Use local xianix-team when running from repo root (for local dev/testing)
 if [ -d "${XIANIX_ROOT}/plugins/security-agent" ]; then

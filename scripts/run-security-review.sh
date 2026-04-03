@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
 # run-security-review.sh
 #
-# Bootstrap script for autonomous security review of a pull request on a server.
+# Bootstrap script for autonomous security review on a server.
+# Supports two modes:
+#
+#   PR review mode (default):
+#     Reviews the diff of a specific pull request and posts findings to the PR.
+#
+#   Full-scan mode (--full-scan):
+#     Clones a branch and scans the entire codebase. Writes a Markdown report to
+#     SECURITY_REPORT_OUTPUT (default: SECURITY_REVIEW.md in the calling directory).
+#     No PR comment is posted. PR_NUMBER is not required.
+#
 # Uses a shared bare clone (REPO_CACHE_DIR) as a git object store, then creates
 # a lightweight per-run git worktree for full isolation between concurrent reviews.
 # The worktree is removed after the run; the bare cache is kept and updated each time.
@@ -10,12 +20,14 @@
 #
 # Usage:
 #   ./scripts/run-security-review.sh [--comment]
+#   ./scripts/run-security-review.sh --full-scan
 #
 # Required environment variables (set by the calling server / CI system):
 #
 #   PLATFORM          github | azure-devops
 #   REPO_URL          Full HTTPS clone URL of the repository to review
 #   PR_NUMBER         Pull request number in the target repo (from …/pull/NN)
+#                     — not required when --full-scan is used
 #
 # GitHub-specific:
 #   GITHUB_TOKEN      PAT with repo + pull_requests scopes (used by MCP + git fetch)
@@ -28,16 +40,20 @@
 #   PR_SOURCE_REF     Full git ref for PR source branch (e.g. refs/heads/feature-branch)
 #
 # Optional:
-#   XIANIX_REPO       Xianix plugin marketplace repo (default: https://github.com/99x/xianix-team.git)
-#   XIANIX_CACHE_DIR  Local path for the cloned xianix-team repo (default: /tmp/security-review-cache/xianix-team)
-#   XIANIX_USE_LOCAL  Set to "1" to use XIANIX_CACHE_DIR as-is (no clone/pull) — for local dev testing
-#   REPO_CACHE_DIR    Directory for the shared bare clone cache (default: /tmp/security-review-cache/<repo-slug>)
-#   WORKDIR           Per-run worktree directory (default: /tmp/security-review-<PR_NUMBER>-<timestamp>-<pid>)
-#   KEEP_WORKDIR      Set to "1" to preserve the worktree after the run (for debugging)
-#   GIT_FETCH_DEPTH   Shallow clone depth (default: 50)
-#   GIT_RETRY_COUNT   Number of retries for network operations (default: 3)
-#   GIT_RETRY_DELAY   Seconds between retries (default: 5)
+#   XIANIX_REPO            Xianix plugin marketplace repo (default: https://github.com/99x/xianix-team.git)
+#   XIANIX_CACHE_DIR       Local path for the cloned xianix-team repo (default: /tmp/security-review-cache/xianix-team)
+#   XIANIX_USE_LOCAL       Set to "1" to use XIANIX_CACHE_DIR as-is (no clone/pull) — for local dev testing
+#   REPO_CACHE_DIR         Directory for the shared bare clone cache (default: /tmp/security-review-cache/<repo-slug>)
+#   WORKDIR                Per-run worktree directory (default: /tmp/security-review-<PR_NUMBER>-<timestamp>-<pid>)
+#   KEEP_WORKDIR           Set to "1" to preserve the worktree after the run (for debugging)
+#   GIT_FETCH_DEPTH        Shallow clone depth (default: 50)
+#   GIT_RETRY_COUNT        Number of retries for network operations (default: 3)
+#   GIT_RETRY_DELAY        Seconds between retries (default: 5)
 #   SECURITY_REVIEW_SKIP_PR_COMMENTS  Set to "1" to skip GitHub / Azure DevOps PR comments (local dev)
+#
+# Full-scan-specific optional:
+#   SCAN_BRANCH            Branch to scan (default: main)
+#   SECURITY_REPORT_OUTPUT Absolute path for the Markdown report (default: <calling-dir>/SECURITY_REVIEW.md)
 
 set -euo pipefail
 
@@ -217,10 +233,12 @@ trap 'exit 143' TERM
 # ---------------------------------------------------------------------------
 
 COMMENT_FLAG=""
+FULL_SCAN=0
 for arg in "$@"; do
     case "$arg" in
-        --comment) COMMENT_FLAG="--comment" ;;
-        *)         fail "Unknown argument: ${arg}" ;;
+        --comment)   COMMENT_FLAG="--comment" ;;
+        --full-scan) FULL_SCAN=1 ;;
+        *)           fail "Unknown argument: ${arg}" ;;
     esac
 done
 
@@ -230,11 +248,13 @@ done
 
 : "${PLATFORM:?PLATFORM is required (github | azure-devops)}"
 : "${REPO_URL:?REPO_URL is required — full HTTPS clone URL of the target repo}"
-: "${PR_NUMBER:?PR_NUMBER is required}"
 
-# Ensure PR_NUMBER is a positive integer to guard against injection
-if ! [[ "${PR_NUMBER}" =~ ^[0-9]+$ ]]; then
-    fail "PR_NUMBER must be a positive integer, got: '${PR_NUMBER}'"
+if [ "$FULL_SCAN" = "0" ]; then
+    : "${PR_NUMBER:?PR_NUMBER is required (or use --full-scan to scan the whole codebase)}"
+    # Ensure PR_NUMBER is a positive integer to guard against injection
+    if ! [[ "${PR_NUMBER}" =~ ^[0-9]+$ ]]; then
+        fail "PR_NUMBER must be a positive integer, got: '${PR_NUMBER}'"
+    fi
 fi
 
 case "$PLATFORM" in
@@ -263,8 +283,12 @@ fi
 
 XIANIX_REPO="${XIANIX_REPO:-https://github.com/99x/xianix-team.git}"
 
-# Include PID in WORKDIR to guarantee uniqueness for concurrent runs on the same PR.
-WORKDIR="${WORKDIR:-/tmp/security-review-${PR_NUMBER}-$(date +%s)-$$}"
+# Include PID in WORKDIR to guarantee uniqueness for concurrent runs.
+if [ "$FULL_SCAN" = "1" ]; then
+    WORKDIR="${WORKDIR:-/tmp/security-review-fullscan-$(date +%s)-$$}"
+else
+    WORKDIR="${WORKDIR:-/tmp/security-review-${PR_NUMBER}-$(date +%s)-$$}"
+fi
 
 REPO_SLUG=$(echo "$REPO_URL" \
     | sed 's|https://||; s|\.git$||; s|[/: ]|-|g; s|%[0-9A-Fa-f][0-9A-Fa-f]|-|g')
@@ -282,7 +306,9 @@ for cmd in git claude python3; do
     command -v "$cmd" > /dev/null 2>&1 || fail "'${cmd}' is not installed"
 done
 
-post_pr_start_comment
+if [ "$FULL_SCAN" = "0" ]; then
+    post_pr_start_comment
+fi
 
 # ---------------------------------------------------------------------------
 # Step 1: Build / update the shared bare clone, then create a per-run worktree
@@ -321,29 +347,36 @@ else
 fi
 
 log "Creating isolated worktree at ${WORKDIR}"
-PR_BRANCH="security-review-${PR_NUMBER}-$$"
 git -C "${REPO_CACHE_DIR}" worktree add --detach "${WORKDIR}"
 
 cd "${WORKDIR}"
 
-# Fetch the PR branch and check it out.
-case "$PLATFORM" in
-    github)
-        verify_github_pr_exists
-        retry git fetch origin "refs/pull/${PR_NUMBER}/head:${PR_BRANCH}" --depth="${FETCH_DEPTH}"
-        ;;
-    azure-devops)
-        if [ -n "${PR_SOURCE_REF:-}" ]; then
-            retry git fetch origin "${PR_SOURCE_REF}:${PR_BRANCH}" --depth="${FETCH_DEPTH}"
-        else
-            retry git fetch origin "refs/pull/${PR_NUMBER}/merge:${PR_BRANCH}" --depth="${FETCH_DEPTH}" \
-                || retry git fetch origin "refs/pullrequest/${PR_NUMBER}/head:${PR_BRANCH}" --depth="${FETCH_DEPTH}"
-        fi
-        ;;
-esac
-
-git checkout "${PR_BRANCH}"
-log "Worktree ready on branch '${PR_BRANCH}'"
+if [ "$FULL_SCAN" = "1" ]; then
+    # Full-scan: check out the target branch so we can commit and push back
+    SCAN_BRANCH="${SCAN_BRANCH:-main}"
+    retry git fetch origin "${SCAN_BRANCH}" --depth="${FETCH_DEPTH}"
+    git checkout -B "${SCAN_BRANCH}" FETCH_HEAD
+    log "Worktree ready on branch '${SCAN_BRANCH}' for full-scan"
+else
+    # PR review: fetch and check out the PR branch
+    PR_BRANCH="security-review-${PR_NUMBER}-$$"
+    case "$PLATFORM" in
+        github)
+            verify_github_pr_exists
+            retry git fetch origin "refs/pull/${PR_NUMBER}/head:${PR_BRANCH}" --depth="${FETCH_DEPTH}"
+            ;;
+        azure-devops)
+            if [ -n "${PR_SOURCE_REF:-}" ]; then
+                retry git fetch origin "${PR_SOURCE_REF}:${PR_BRANCH}" --depth="${FETCH_DEPTH}"
+            else
+                retry git fetch origin "refs/pull/${PR_NUMBER}/merge:${PR_BRANCH}" --depth="${FETCH_DEPTH}" \
+                    || retry git fetch origin "refs/pullrequest/${PR_NUMBER}/head:${PR_BRANCH}" --depth="${FETCH_DEPTH}"
+            fi
+            ;;
+    esac
+    git checkout "${PR_BRANCH}"
+    log "Worktree ready on branch '${PR_BRANCH}'"
+fi
 
 # ---------------------------------------------------------------------------
 # Step 2: Write MCP config (ephemeral, in home dir, cleaned up on exit)
@@ -400,13 +433,20 @@ log "Plugin ready at ${PLUGIN_DIR}"
 # Step 4: Run the security review
 # ---------------------------------------------------------------------------
 
-REVIEW_PROMPT="/security-review ${PR_NUMBER} ${COMMENT_FLAG}"
-log "Running: ${REVIEW_PROMPT}"
-
 MCP_CONFIG_ARGS=()
 if [ "$PLATFORM" = "github" ]; then
     MCP_CONFIG_ARGS=(--mcp-config "${HOME}/.claude/mcp-config-security-review.json")
 fi
+
+if [ "$FULL_SCAN" = "1" ]; then
+    SECURITY_REPORT_OUTPUT="${SECURITY_REPORT_OUTPUT:-$(pwd)/SECURITY_REVIEW.md}"
+    REVIEW_PROMPT="/security-full-scan ${SECURITY_REPORT_OUTPUT}"
+    log "Running full codebase scan — report will be written to ${SECURITY_REPORT_OUTPUT}"
+else
+    REVIEW_PROMPT="/security-review ${PR_NUMBER} ${COMMENT_FLAG}"
+fi
+
+log "Running: ${REVIEW_PROMPT}"
 
 set +e
 CLAUDE_OUTPUT=$(claude \
@@ -427,4 +467,32 @@ if [ "$CLAUDE_EXIT" -ne 0 ]; then
     exit "$CLAUDE_EXIT"
 fi
 
-log "Security review complete"
+if [ "$FULL_SCAN" = "1" ]; then
+    log "Full-scan complete — report written to ${SECURITY_REPORT_OUTPUT}"
+
+    # ---------------------------------------------------------------------------
+    # Step 5: Commit and push the report back to the scanned branch
+    # ---------------------------------------------------------------------------
+
+    REPORT_FILE="${SECURITY_REPORT_OUTPUT}"
+    [ -f "${REPORT_FILE}" ] || fail "Report file not found at ${REPORT_FILE} — agent may not have written it"
+
+    git config user.name  "${GIT_USER_NAME:?GIT_USER_NAME is required for committing the report (set in .env)}"
+    git config user.email "${GIT_USER_EMAIL:?GIT_USER_EMAIL is required for committing the report (set in .env)}"
+
+    # Stage only the report file (relative path inside the worktree)
+    REPORT_REL="${REPORT_FILE#${WORKDIR}/}"
+    git add "${REPORT_REL}"
+
+    if git diff --cached --quiet; then
+        log "Report is unchanged — nothing to commit"
+    else
+        COMMIT_DATE=$(date -u +"%Y-%m-%d")
+        git commit -m "security: automated full-scan report (${COMMIT_DATE})"
+        log "Committed report — pushing to origin/${SCAN_BRANCH}"
+        retry git push origin "HEAD:${SCAN_BRANCH}"
+        log "Report pushed to origin/${SCAN_BRANCH}"
+    fi
+else
+    log "Security review complete"
+fi

@@ -250,3 +250,4 @@ Security review posted on PR #<number>: <verdict> — <N> findings (<N> critical
 - Do not flag stylistic issues, missing tests, or non-security concerns
 - If a potential secret looks like a placeholder (e.g., `YOUR_API_KEY_HERE`), mark as INFO only
 - Prefer actionable recommendations — link to a pattern or show a corrected snippet where possible
+- **Never include actual sensitive values in the report** — do not reproduce hardcoded secrets, tokens, passwords, keys, or PII verbatim. Refer to the finding by file and line only (e.g., "hardcoded API key at line 42") and redact the value itself
