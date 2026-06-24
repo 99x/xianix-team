@@ -53,6 +53,8 @@ var xianixAgent = xiansPlatform.Agents.Register(new()
     IsTemplate = true
 });
 
+var impactAnalysisAgent = ImpactAnalysisAgent.Register(xiansPlatform);
+
 xianixAgent.Workflows.DefineCustom<PrReviewScriptWorkflow>(new WorkflowOptions { Activable = false })
     .AddActivity<RunPrReviewScriptActivity>();
 xianixAgent.Workflows.DefineCustom<RequirementAnalysisWorkflow>(new WorkflowOptions { Activable = false })
@@ -65,15 +67,16 @@ integratorWorkflow.OnWebhook(async (context) =>
     await ReqAnalystAgent.HandleWebhookAsync(context, agentLogger, openAiApiKey);
 });
 
-var supervisor = new MafSubAgent(openAiApiKey);
+Console.WriteLine("Agents registered. Listening for webhooks (pr-reviewer, req-analyst, imp-analyst)...");
 
-var conversationalWorkflow = xianixAgent.Workflows.DefineSupervisor();
-conversationalWorkflow.OnUserChatMessage(async (message) =>
+try
 {
-    var reply = await supervisor.RunAsync(message, cts.Token).ConfigureAwait(false);
-    await message.ReplyAsync(reply).ConfigureAwait(false);
-});
-
-Console.WriteLine("Agents registered. Listening for webhooks (PR + requirement analysis)...");
-
-await xianixAgent.RunAllAsync();
+    await Task.WhenAll(
+        xianixAgent.RunAllAsync(),
+        impactAnalysisAgent.RunAllAsync()
+    ).WaitAsync(cts.Token);
+}
+catch (OperationCanceledException)
+{
+    Console.WriteLine("Shutting down gracefully...");
+}

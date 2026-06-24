@@ -20,8 +20,8 @@ fi
 : "${GITHUB_TOKEN:?GITHUB_TOKEN must be set in .env or environment}"
 
 export PLATFORM=github
-export REPO_URL="${REPO_URL:-https://github.com/XiansAiPlatform/agent-studio.git}"
-export ISSUE_NUMBER="${ISSUE_NUMBER:-25}"
+export REPO_URL="${REPO_URL:-https://github.com/99x/xianix-team.git}"
+export ISSUE_NUMBER="${ISSUE_NUMBER:-3}"
 
 # Use local xianix-team when running from repo root (for local dev/testing)
 if [ -d "${XIANIX_ROOT}/plugins/req-analyst" ]; then
